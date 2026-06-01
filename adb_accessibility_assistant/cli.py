@@ -5,10 +5,12 @@ import time
 from pathlib import Path
 
 from .adb_client import ADBClient, AndroidDeviceError
+from .api_server import serve_api
 from .config import AppConfig, load_config
 from .gopay_flow import FlowState
 from .gopay_pages import actionable_nodes, detect_gopay_page
 from .gopay_recording import build_page_record, save_page_record
+from .gopay_tasks import prepare_phone_input_task, run_gopay_full_task
 from .ocr import OCRUnavailableError, available_backends, create_ocr_engine
 from .runtime import create_gopay_runtime, create_runtime
 from .ui_dump import dump_ui_nodes
@@ -92,6 +94,20 @@ def build_parser() -> argparse.ArgumentParser:
         help="Reuse an existing phone number (with country code, e.g. +62857xxxxxxxx) instead of ordering new",
     )
 
+    api_server = subparsers.add_parser(
+        "api-server",
+        parents=[common],
+        help="Start HTTP API server for background GoPay tasks",
+    )
+    api_server.add_argument("--host", default="127.0.0.1", help="Bind host (default: 127.0.0.1)")
+    api_server.add_argument("--port", type=int, default=8787, help="Bind port (default: 8787)")
+    api_server.add_argument(
+        "--callback-timeout",
+        type=float,
+        default=10.0,
+        help="HTTP callback timeout in seconds (default: 10)",
+    )
+
     return parser
 
 
@@ -143,6 +159,8 @@ def main(argv: list[str] | None = None) -> int:
         return run_gopay_input(args)
     if args.command == "run-gopay":
         return run_gopay_full(args)
+    if args.command == "api-server":
+        return run_api_server(args)
 
     try:
         runtime = create_runtime(
@@ -322,30 +340,20 @@ def run_gopay_to_phone_input(args: argparse.Namespace) -> int:
         return 1
 
     try:
-        runtime = create_gopay_runtime(
+        result = prepare_phone_input_task(
             config_path=args.config,
             adb_path=args.adb_path,
             device_serial=args.device,
-            tts_enabled=not args.mute,
+            mute=args.mute,
+            max_steps=args.max_steps,
             log_callback=print,
         )
     except (OCRUnavailableError, RuntimeError, ValueError) as exc:
         print(f"Initialization failed: {exc}")
         return 2
 
-    try:
-        print("Preparing GoPay phone input page from a clean app state...")
-        final_state = runtime.flow.prepare_phone_input(max_steps=args.max_steps)
-
-        if final_state == FlowState.WAITING_PHONE_INPUT:
-            print("Ready: GoPay is waiting for phone number input.")
-            return 0
-
-        print(f"Flow stopped before phone input. Current state: {final_state.value}")
-        return 1
-    except (AndroidDeviceError, OCRUnavailableError, RuntimeError, ValueError) as exc:
-        print(f"Command failed: {exc}")
-        return 1
+    print(result["message"])
+    return 0 if result.get("ok") else 1
 
 
 def run_gopay_inspect(args: argparse.Namespace) -> int:
@@ -595,247 +603,66 @@ def run_gopay_input(args: argparse.Namespace) -> int:
 
 def run_gopay_full(args: argparse.Namespace) -> int:
     """Run full GoPay registration flow end-to-end from CLI."""
-    from .gopay_flow import FlowState
-    from .nexsms_client import NexSMSError, is_phone_code_timeout_error
-
-    try:
-        runtime = create_gopay_runtime(
-            config_path=args.config,
-            adb_path=args.adb_path,
-            device_serial=args.device,
-            tts_enabled=not args.mute,
-            log_callback=print,
-        )
-    except (OCRUnavailableError, RuntimeError, ValueError) as exc:
-        print(f"Initialization failed: {exc}")
-        return 2
-
-    # Apply CLI overrides
-    if args.poll_timeout is not None:
-        runtime.flow.config.poll_timeout = args.poll_timeout
-    if args.step_delay is not None:
-        runtime.flow.config.step_delay = args.step_delay
-    if args.phone:
-        runtime.flow.ctx.phone_number = args.phone
-        print(f"  Reusing phone:   {args.phone}")
+    if not args.config:
+        print("Error: --config is required for run-gopay")
+        return 1
 
     print("=" * 60)
     print("GoPay Registration - Full Run")
     print("=" * 60)
     print(f"  Config:          {args.config}")
     print(f"  Max steps:       {args.max_steps}")
-    print(f"  Poll timeout:    {runtime.flow.config.poll_timeout}s")
-    print(f"  Step delay:      {runtime.flow.config.step_delay}s")
     print(f"  OTP retry:       {'on' if args.retry_on_otp_timeout else 'off'}")
-    print(f"  Activation DB:   {runtime.flow.config.activation_db_path or 'disabled'}")
-    print(
-        "  Reuse existing: "
-        f">{runtime.flow.config.reuse_existing_number_min_remaining_minutes}m remaining"
-    )
-    print(f"  Activation TTL:  {runtime.flow.config.activation_validity_minutes}m")
-    print(f"  Same-number retry limit: {runtime.flow.config.same_number_retry_limit}")
-    print(f"  Expiry guard:    {runtime.flow.config.same_number_expiry_guard_minutes}m")
-    print(f"  Country:         {runtime.flow.config.country_name}")
-    print(f"  Service:         {runtime.flow.config.service_code}")
+    if args.phone:
+        print(f"  Reuse phone:     {args.phone}")
     print("=" * 60)
 
-    max_phone_cycles = 3 if args.retry_on_otp_timeout else 1
-    user_supplied_phone = bool(args.phone)
+    try:
+        result = run_gopay_full_task(
+            config_path=args.config,
+            adb_path=args.adb_path,
+            device_serial=args.device,
+            mute=args.mute,
+            max_steps=args.max_steps,
+            poll_timeout=args.poll_timeout,
+            step_delay=args.step_delay,
+            retry_on_otp_timeout=args.retry_on_otp_timeout,
+            phone=args.phone,
+            log_callback=print,
+        )
+    except (OCRUnavailableError, RuntimeError, ValueError) as exc:
+        print(f"Initialization failed: {exc}")
+        return 2
+    if result.get("ok"):
+        data = result.get("data") or {}
+        print(f"\n{'='*60}")
+        print("REGISTRATION COMPLETE!")
+        print(f"  Username: {data.get('username')}")
+        print(f"  Phone:    {data.get('phone')}")
+        print(f"{'='*60}")
+        return 0
 
-    def snapshot_phone_meta() -> dict[str, float | int | str]:
-        return {
-            "phone_number": runtime.flow.ctx.phone_number,
-            "phone_acquired_at_epoch": runtime.flow.ctx.phone_acquired_at_epoch,
-            "phone_expiry_epoch": runtime.flow.ctx.phone_expiry_epoch,
-            "phone_retry_count": runtime.flow.ctx.phone_retry_count,
-        }
-
-    def restore_phone_meta(meta: dict[str, float | int | str]) -> None:
-        runtime.flow.ctx.phone_number = str(meta.get("phone_number") or "")
-        runtime.flow.ctx.phone_acquired_at_epoch = float(meta.get("phone_acquired_at_epoch") or 0.0)
-        runtime.flow.ctx.phone_expiry_epoch = float(meta.get("phone_expiry_epoch") or 0.0)
-        runtime.flow.ctx.phone_retry_count = int(meta.get("phone_retry_count") or 0)
-
-    def current_phone_remaining_minutes(meta: dict[str, float | int | str]) -> float | None:
-        expiry_epoch = float(meta.get("phone_expiry_epoch") or 0.0)
-        if expiry_epoch <= 0:
-            return None
-        return max(0.0, (expiry_epoch - time.time()) / 60.0)
-
-    def should_invalidate_phone(meta: dict[str, float | int | str]) -> tuple[bool, str]:
-        retry_limit = max(0, int(runtime.flow.config.same_number_retry_limit))
-        retry_count = int(meta.get("phone_retry_count") or 0)
-        if retry_count >= retry_limit:
-            return True, f"same-number retry limit reached ({retry_count}/{retry_limit})"
-
-        remaining_minutes = current_phone_remaining_minutes(meta)
-        guard_minutes = max(0.0, float(runtime.flow.config.same_number_expiry_guard_minutes))
-        if remaining_minutes is not None and remaining_minutes <= guard_minutes:
-            return True, (
-                f"sms validity remaining {remaining_minutes:.1f}m "
-                f"<= guard {guard_minutes:.1f}m"
-            )
-        return False, ""
-
-    def invalidate_current_phone(reason: str) -> None:
-        phone_number = runtime.flow.ctx.phone_number
-        if user_supplied_phone or not phone_number:
-            return
-        runtime.flow.nexsms.mark_number_invalid(phone_number, reason=reason)
-        try:
-            result = runtime.flow.nexsms.close_activation(phone_number)
-            print(f"Marked phone number invalid: {phone_number}")
-            print(f"  Reason: {reason}")
-            if result:
-                print(f"  NexSMS: {result}")
-        except NexSMSError as exc:
-            print(f"Warning: failed to invalidate phone number {phone_number}: {exc}")
-
-    pending_phone_meta = snapshot_phone_meta()
-    attempt = 1
-    phone_cycle = 1
-    while phone_cycle <= max_phone_cycles:
-        if attempt > 1:
-            print(f"\n{'='*60}")
-            print(f"RETRY attempt {attempt} (phone cycle {phone_cycle}/{max_phone_cycles})")
-            print(f"{'='*60}")
-            runtime.flow.reset()
-            if pending_phone_meta.get("phone_number"):
-                restore_phone_meta(pending_phone_meta)
-            if user_supplied_phone and runtime.flow.ctx.phone_number:
-                runtime.flow.ctx.phone_number = args.phone
-                print(f"Reusing existing phone number: {runtime.flow.ctx.phone_number}")
-            elif runtime.flow.ctx.phone_number:
-                same_retry_count = int(runtime.flow.ctx.phone_retry_count or 0)
-                remaining_minutes = current_phone_remaining_minutes(snapshot_phone_meta())
-                if same_retry_count > 0:
-                    if remaining_minutes is None:
-                        print(
-                            "Reusing existing phone number: "
-                            f"{runtime.flow.ctx.phone_number} (same-number retry {same_retry_count})"
-                        )
-                    else:
-                        print(
-                            "Reusing existing phone number: "
-                            f"{runtime.flow.ctx.phone_number} "
-                            f"(same-number retry {same_retry_count}, remaining {remaining_minutes:.1f}m)"
-                        )
-
-        try:
-            print(f"\n[Attempt {attempt}] Starting registration flow...")
-            final_state = runtime.flow.run(max_steps=args.max_steps)
-
-            if final_state == FlowState.REGISTRATION_COMPLETE:
-                print(f"\n{'='*60}")
-                print("REGISTRATION COMPLETE!")
-                print(f"  Username: {runtime.flow.ctx.username}")
-                print(f"  Phone:    {runtime.flow.ctx.phone_number}")
-                print(f"{'='*60}")
-                return 0
-
-            # OTP timeout or generic error -> retry if enabled
-            if final_state in (FlowState.ERROR, FlowState.WAITING_OTP):
-                err = runtime.flow.ctx.error_message or final_state.value
-                print(f"\nFlow ended: {final_state.value} ({err})")
-                if (
-                    args.retry_on_otp_timeout
-                    and is_phone_code_timeout_error(err)
-                ):
-                    phone_meta = snapshot_phone_meta()
-                    invalidate, reason = should_invalidate_phone(phone_meta)
-                    if invalidate:
-                        if user_supplied_phone:
-                            print(f"User-supplied phone exceeded retry policy: {reason}")
-                            return 1
-                        invalidate_current_phone(reason)
-                        pending_phone_meta = {}
-                        phone_cycle += 1
-                        attempt += 1
-                        if phone_cycle > max_phone_cycles:
-                            break
-                        print("Will retry with a new phone number...")
-                        continue
-
-                    phone_meta["phone_retry_count"] = int(phone_meta.get("phone_retry_count") or 0) + 1
-                    pending_phone_meta = phone_meta
-                    remaining_minutes = current_phone_remaining_minutes(phone_meta)
-                    if user_supplied_phone:
-                        print(
-                            "OTP polling timed out. Will retry with the same user-supplied phone number..."
-                        )
-                    else:
-                        if remaining_minutes is None:
-                            print(
-                                "OTP polling timed out. Will retry with the same phone number "
-                                f"({phone_meta['phone_retry_count']}/{runtime.flow.config.same_number_retry_limit})..."
-                            )
-                        else:
-                            print(
-                                "OTP polling timed out. Will retry with the same phone number "
-                                f"({phone_meta['phone_retry_count']}/{runtime.flow.config.same_number_retry_limit}, "
-                                f"remaining {remaining_minutes:.1f}m)..."
-                            )
-                    attempt += 1
-                    continue
-                return 1
-
-            if final_state == FlowState.MANUAL:
-                print(f"\nFlow requires manual intervention (state: {final_state.value}).")
-                return 1
-
-            print(f"\nFlow ended with state: {final_state.value}")
-            return 1
-
-        except KeyboardInterrupt:
-            print("\n\nInterrupted by user.")
-            print(f"Current state: {runtime.flow.ctx.current_state.value}")
-            if runtime.flow.ctx.phone_number:
-                print(f"Phone: {runtime.flow.ctx.phone_number}")
-            return 130
-        except (AndroidDeviceError, NexSMSError, RuntimeError, ValueError) as exc:
-            print(f"\nFlow error: {exc}")
-            if (
-                args.retry_on_otp_timeout
-                and is_phone_code_timeout_error(str(exc))
-            ):
-                phone_meta = snapshot_phone_meta()
-                invalidate, reason = should_invalidate_phone(phone_meta)
-                if invalidate:
-                    if user_supplied_phone:
-                        print(f"User-supplied phone exceeded retry policy: {reason}")
-                        return 1
-                    invalidate_current_phone(reason)
-                    pending_phone_meta = {}
-                    phone_cycle += 1
-                    attempt += 1
-                    if phone_cycle > max_phone_cycles:
-                        break
-                    print("Will retry with a new phone number...")
-                    continue
-
-                phone_meta["phone_retry_count"] = int(phone_meta.get("phone_retry_count") or 0) + 1
-                pending_phone_meta = phone_meta
-                remaining_minutes = current_phone_remaining_minutes(phone_meta)
-                if user_supplied_phone:
-                    print("OTP polling timed out. Retrying with the same user-supplied phone number...")
-                else:
-                    if remaining_minutes is None:
-                        print(
-                            "OTP polling timed out. Retrying with the same phone number "
-                            f"({phone_meta['phone_retry_count']}/{runtime.flow.config.same_number_retry_limit})..."
-                        )
-                    else:
-                        print(
-                            "OTP polling timed out. Retrying with the same phone number "
-                            f"({phone_meta['phone_retry_count']}/{runtime.flow.config.same_number_retry_limit}, "
-                            f"remaining {remaining_minutes:.1f}m)..."
-                        )
-                attempt += 1
-                continue
-            return 1
-
-    print("All attempts exhausted.")
+    print(f"\nFlow ended: {result.get('state')} ({result.get('message')})")
     return 1
+
+
+def run_api_server(args: argparse.Namespace) -> int:
+    try:
+        serve_api(
+            host=args.host,
+            port=args.port,
+            default_config_path=args.config,
+            mute=args.mute,
+            callback_timeout=args.callback_timeout,
+            log_callback=print,
+        )
+        return 0
+    except KeyboardInterrupt:
+        print("\nAPI server stopped.")
+        return 0
+    except (RuntimeError, ValueError, OSError) as exc:
+        print(f"API server failed: {exc}")
+        return 1
 
 
 def run_assist_shell(engine) -> None:

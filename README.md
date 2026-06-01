@@ -180,6 +180,136 @@ python -m adb_accessibility_assistant assist --config config.example.yaml --mute
 python -m adb_accessibility_assistant gui --config config.example.yaml --mute
 ```
 
+## HTTP API
+
+如果你需要让别的程序远程调用这套流程，可以启动内置 API server：
+
+```powershell
+python -m adb_accessibility_assistant api-server --config config.gopay.yaml --host 127.0.0.1 --port 8787 --mute
+```
+
+这会启动一个单机 HTTP 服务。它的特点是：
+
+- 任务按队列串行执行，适合单设备/单模拟器场景
+- 支持后台执行
+- 支持查询任务状态
+- 支持取消正在运行的任务
+- 支持把最终结果回调到你的业务系统
+
+### API 端点
+
+- `GET /api/health`：健康检查
+- `GET /api/tasks`：查看任务列表
+- `GET /api/tasks/{task_id}`：查看单个任务详情
+- `POST /api/tasks/{task_id}/cancel`：取消任务
+- `POST /api/tasks/run-gopay`：提交完整 GoPay 注册任务
+- `POST /api/tasks/prepare-phone-input`：提交“只走到手机号页”的任务
+- `POST /api/tasks/inspect`：提交当前页面识别任务
+- `POST /api/tasks`：通用提交入口，手动指定 `task_type`
+
+### 提交完整注册任务
+
+```powershell
+curl -X POST http://127.0.0.1:8787/api/tasks/run-gopay ^
+  -H "Content-Type: application/json" ^
+  -d "{\"retry_on_otp_timeout\": true, \"max_steps\": 200, \"callback_url\": \"http://127.0.0.1:9000/callback\"}"
+```
+
+请求体支持的常用字段：
+
+- `config_path`：可选。不传就使用启动 `api-server` 时的 `--config`
+- `adb_path`：可选，覆盖默认 adb 路径
+- `device_serial`：可选，覆盖默认设备序列号
+- `mute`：可选，默认继承 server 启动参数
+- `max_steps`：最大步骤数
+- `poll_timeout`：OTP 等待超时秒数
+- `step_delay`：步骤间隔秒数
+- `retry_on_otp_timeout`：OTP 超时后是否自动重试
+- `phone`：直接复用现成手机号
+- `callback_url`：任务状态变化回调地址
+- `callback_headers`：回调请求附加 HTTP 头
+- `metadata`：业务侧自定义字段，会原样带回
+
+### 只走到手机号页
+
+```powershell
+curl -X POST http://127.0.0.1:8787/api/tasks/prepare-phone-input ^
+  -H "Content-Type: application/json" ^
+  -d "{\"max_steps\": 10}"
+```
+
+### 页面识别
+
+```powershell
+curl -X POST http://127.0.0.1:8787/api/tasks/inspect ^
+  -H "Content-Type: application/json" ^
+  -d "{\"save_dir\": \"artifacts/gopay\"}"
+```
+
+### 查询任务
+
+```powershell
+curl http://127.0.0.1:8787/api/tasks
+curl http://127.0.0.1:8787/api/tasks/<task_id>
+```
+
+### 取消任务
+
+```powershell
+curl -X POST http://127.0.0.1:8787/api/tasks/<task_id>/cancel
+```
+
+### 回调格式
+
+如果提交任务时带了 `callback_url`，server 会在这些状态变化时回调：
+
+- `task.queued`
+- `task.started`
+- `task.succeeded`
+- `task.failed`
+- `task.canceled`
+
+回调是一个 `POST` JSON，请求体结构大致如下：
+
+```json
+{
+  "event": "task.succeeded",
+  "event_at": "2026-06-01T09:00:00+00:00",
+  "task": {
+    "task_id": "8c4b7d8d9e8f4d20b91dcb3a1f4b5c6d",
+    "task_type": "run-gopay",
+    "status": "succeeded",
+    "request": {
+      "retry_on_otp_timeout": true,
+      "config_path": "config.gopay.yaml"
+    },
+    "metadata": {
+      "order_id": "A10001"
+    },
+    "result": {
+      "ok": true,
+      "status": "success",
+      "state": "registration_complete",
+      "message": "Registration completed successfully.",
+      "data": {
+        "username": "Abcdefgh",
+        "phone": "+62857xxxxxxx"
+      }
+    },
+    "logs": [
+      "State: waiting_phone_input",
+      "Getting phone number from NexSMS..."
+    ]
+  }
+}
+```
+
+注意：
+
+- 这是单进程内存队列，重启 API server 后旧任务状态不会保留
+- 同一时间只适合控制一台设备
+- 如果回调地址不可达，任务本身不会因此失败，只会在任务日志里记一条 callback 失败信息
+
 ## 典型使用流程
 
 推荐先按这个顺序测试：

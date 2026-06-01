@@ -1254,8 +1254,11 @@ class GoPayRegistrationFlow:
 
             state = self.step()
 
+            if state == FlowState.REGISTRATION_COMPLETE:
+                self._handle_completion()
+                break
+
             if state in (
-                FlowState.REGISTRATION_COMPLETE,
                 FlowState.ERROR,
                 FlowState.MANUAL,
             ):
