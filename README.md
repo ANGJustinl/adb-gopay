@@ -20,10 +20,10 @@ python -m adb_accessibility_assistant run-gopay --config config.gopay.yaml --mut
 
 ## 目录说明
 
-- [config.gopay.yaml](/C:/Workplace/Linuxdo/adb-gopay/config.gopay.yaml)：GoPay 主配置
-- [config.example.yaml](/C:/Workplace/Linuxdo/adb-gopay/config.example.yaml)：通用辅助模式示例配置
-- [run-assistant.ps1](/C:/Workplace/Linuxdo/adb-gopay/run-assistant.ps1)：自动使用本地 `.venv` 的 PowerShell 启动脚本
-- [adb_accessibility_assistant](/C:/Workplace/Linuxdo/adb-gopay/adb_accessibility_assistant)：主程序源码
+- [config.gopay.yaml](./config.gopay.yaml)：GoPay 主配置
+- [config.example.yaml](./config.example.yaml)：通用辅助模式示例配置
+- [run-assistant.ps1](./run-assistant.ps1)：自动使用本地 `.venv` 的 PowerShell 启动脚本
+- [adb_accessibility_assistant](./adb_accessibility_assistant)：主程序源码
 
 ## 环境要求
 
@@ -71,7 +71,7 @@ python -m adb_accessibility_assistant doctor --config config.gopay.yaml --mute
 
 ### 1. GoPay 主配置
 
-[config.gopay.yaml](/C:/Workplace/Linuxdo/adb-gopay/config.gopay.yaml) 是完整流程使用的配置文件。
+[config.gopay.yaml](./config.gopay.yaml) 是完整流程使用的配置文件。
 
 最关键的字段有：
 
@@ -95,7 +95,7 @@ python -m adb_accessibility_assistant doctor --config config.gopay.yaml --mute
 
 ### 2. 通用辅助配置
 
-[config.example.yaml](/C:/Workplace/Linuxdo/adb-gopay/config.example.yaml) 主要给这些命令用：
+[config.example.yaml](./config.example.yaml) 主要给这些命令用：
 
 - `scan`
 - `tap-text`
