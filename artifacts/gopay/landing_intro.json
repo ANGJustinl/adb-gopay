@@ -1,0 +1,188 @@
+{
+  "recorded_at": "2026-05-31T09:20:32.544258+00:00",
+  "detected_page_id": "landing_intro",
+  "detected_page_title": "Landing Intro",
+  "detection_score": 0,
+  "matched_terms": [
+    "Bahasa Indonesia",
+    "Help"
+  ],
+  "notes": "GoPay landing page before phone-number entry. Has 'Masukkan nomor HP-mu' CTA.",
+  "next_candidate": "Tap 'Masukkan nomor HP-mu' to go to phone_input",
+  "ocr_lines": [],
+  "actionable": [
+    {
+      "index": 6,
+      "class_name": "android.view.View",
+      "text": "",
+      "content_desc": "Bahasa Indonesia",
+      "clickable": true,
+      "enabled": true,
+      "bounds": "[812,41][1056,98]"
+    },
+    {
+      "index": 11,
+      "class_name": "android.view.View",
+      "text": "",
+      "content_desc": "Country code +62",
+      "clickable": true,
+      "enabled": true,
+      "bounds": "[24,289][114,331]"
+    },
+    {
+      "index": 12,
+      "class_name": "android.widget.Button",
+      "text": "",
+      "content_desc": "Ada kendala nomor HP?",
+      "clickable": true,
+      "enabled": true,
+      "bounds": "[24,356][337,410]"
+    },
+    {
+      "index": 15,
+      "class_name": "android.widget.ImageView",
+      "text": "",
+      "content_desc": "Lanjut dengan Google",
+      "clickable": true,
+      "enabled": true,
+      "bounds": "[24,566][1056,638]"
+    }
+  ],
+  "nodes": [
+    {
+      "index": 1,
+      "class_name": "android.view.View",
+      "text": "",
+      "content_desc": "",
+      "clickable": true,
+      "enabled": true,
+      "bounds": "[0,0][1080,1920]"
+    },
+    {
+      "index": 2,
+      "class_name": "android.view.View",
+      "text": "",
+      "content_desc": "",
+      "clickable": true,
+      "enabled": true,
+      "bounds": "[24,51][60,87]"
+    },
+    {
+      "index": 3,
+      "class_name": "android.widget.ImageView",
+      "text": "",
+      "content_desc": "Back",
+      "clickable": false,
+      "enabled": true,
+      "bounds": "[24,51][60,87]"
+    },
+    {
+      "index": 4,
+      "class_name": "android.widget.Button",
+      "text": "",
+      "content_desc": "",
+      "clickable": true,
+      "enabled": true,
+      "bounds": "[734,41][788,95]"
+    },
+    {
+      "index": 5,
+      "class_name": "android.widget.ImageView",
+      "text": "",
+      "content_desc": "Help",
+      "clickable": false,
+      "enabled": true,
+      "bounds": "[749,56][773,80]"
+    },
+    {
+      "index": 6,
+      "class_name": "android.view.View",
+      "text": "",
+      "content_desc": "Bahasa Indonesia",
+      "clickable": true,
+      "enabled": true,
+      "bounds": "[812,41][1056,98]"
+    },
+    {
+      "index": 7,
+      "class_name": "android.widget.ImageView",
+      "text": "",
+      "content_desc": "Language",
+      "clickable": false,
+      "enabled": true,
+      "bounds": "[831,57][855,81]"
+    },
+    {
+      "index": 8,
+      "class_name": "android.view.View",
+      "text": "",
+      "content_desc": "Selamat datang di GoPay!",
+      "clickable": false,
+      "enabled": true,
+      "bounds": "[24,126][1056,180]"
+    },
+    {
+      "index": 9,
+      "class_name": "android.view.View",
+      "text": "",
+      "content_desc": "Masuk atau daftar hanya dalam beberapa langkah mudah.",
+      "clickable": false,
+      "enabled": true,
+      "bounds": "[24,186][1056,216]"
+    },
+    {
+      "index": 10,
+      "class_name": "android.view.View",
+      "text": "",
+      "content_desc": "Nomor HP, wajib Bidang Masukan",
+      "clickable": false,
+      "enabled": true,
+      "bounds": "[0,216][1080,332]"
+    },
+    {
+      "index": 11,
+      "class_name": "android.view.View",
+      "text": "",
+      "content_desc": "Country code +62",
+      "clickable": true,
+      "enabled": true,
+      "bounds": "[24,289][114,331]"
+    },
+    {
+      "index": 12,
+      "class_name": "android.widget.Button",
+      "text": "",
+      "content_desc": "Ada kendala nomor HP?",
+      "clickable": true,
+      "enabled": true,
+      "bounds": "[24,356][337,410]"
+    },
+    {
+      "index": 13,
+      "class_name": "android.widget.Button",
+      "text": "",
+      "content_desc": "Lanjut",
+      "clickable": true,
+      "enabled": false,
+      "bounds": "[24,434][1056,500]"
+    },
+    {
+      "index": 14,
+      "class_name": "android.view.View",
+      "text": "",
+      "content_desc": "atau",
+      "clickable": false,
+      "enabled": true,
+      "bounds": "[519,518][561,548]"
+    },
+    {
+      "index": 15,
+      "class_name": "android.widget.ImageView",
+      "text": "",
+      "content_desc": "Lanjut dengan Google",
+      "clickable": true,
+      "enabled": true,
+      "bounds": "[24,566][1056,638]"
+    }
+  ]
+}

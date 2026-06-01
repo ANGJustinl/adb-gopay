@@ -1,0 +1,259 @@
+# adb-gopay 使用教程
+
+这是一个基于 `adb`、Android UI dump 和可选 OCR 的 GoPay 自动化工具，当前重点是 GoPay 注册流程自动化，同时保留通用的辅助模式命令。
+
+目前已经接通的主流程包括：
+
+- 冷启动前自动清理 `com.gojek.gopay`
+- 自动拒绝首次位置权限引导
+- 自动进入手机号输入页
+- 通过 NexSMS 购买印尼号码并等待 OTP
+- OTP 后继续填写名称
+- 进入 `Profil` -> `Pengaturan & keamanan` -> `Perlindungan akun`
+- 点击 `Pasang PIN`，完成 PIN 和二次确认
+- 如果 PIN 后跳到 WhatsApp OTP，会切到 `Coba Metode Lainnya`，再改走 `OTP via SMS`
+
+## 目录说明
+
+- [config.gopay.yaml](/C:/Workplace/Linuxdo/adb-gopay/config.gopay.yaml)：GoPay 主配置
+- [config.example.yaml](/C:/Workplace/Linuxdo/adb-gopay/config.example.yaml)：通用辅助模式示例配置
+- [run-assistant.ps1](/C:/Workplace/Linuxdo/adb-gopay/run-assistant.ps1)：自动使用本地 `.venv` 的 PowerShell 启动脚本
+- [adb_accessibility_assistant](/C:/Workplace/Linuxdo/adb-gopay/adb_accessibility_assistant)：主程序源码
+
+## 环境要求
+
+- Windows
+- Python 3.12+
+- 已安装并可直接执行 `adb`
+- BlueStacks 或真实 Android 设备
+- 建议安装 `ADBKeyboard.apk`，方便稳定输入文本
+
+OCR 和语音是可选的：
+
+- 推荐 OCR：`rapidocr-onnxruntime`
+- 可选 TTS：`pyttsx3`
+
+如果没有安装 `pyttsx3`，命令行运行时请带 `--mute`。
+
+## 安装
+
+```powershell
+python -m venv .venv
+.venv\Scripts\Activate.ps1
+python -m pip install -r requirements.txt
+```
+
+如果你想使用离线语音播报：
+
+```powershell
+python -m pip install pyttsx3
+```
+
+如果你不想每次手动激活虚拟环境，也可以使用项目自带脚本：
+
+```powershell
+.\run-assistant.ps1 doctor --config config.gopay.yaml --mute
+.\run-assistant.ps1 gopay-to-phone-input --config config.gopay.yaml --mute
+.\run-assistant.ps1 run-gopay --config config.gopay.yaml --mute --retry-on-otp-timeout
+```
+
+## 启动前检查
+
+先确认设备在线：
+
+```powershell
+adb devices
+```
+
+再执行环境自检：
+
+```powershell
+python -m adb_accessibility_assistant doctor --config config.gopay.yaml --mute
+```
+
+如果这里看不到设备，后面的 GoPay 流程都不会成功。
+
+## 配置说明
+
+### 1. GoPay 主配置
+
+[config.gopay.yaml](/C:/Workplace/Linuxdo/adb-gopay/config.gopay.yaml) 是完整流程使用的配置文件。
+
+最关键的字段有：
+
+- `adb_path`：`adb` 可执行文件路径
+- `device_serial`：设备序列号，多设备时建议填写
+- `target_package`：默认是 `com.gojek.gopay`
+- `reset_app_on_start`：默认 `true`，每次启动前都清空应用数据
+- `nexsms.api_key`：你的 NexSMS API Key
+- `nexsms.proxy`：代理地址，默认空字符串，不走代理
+- `nexsms.country_name`：默认 `Indonesia`
+- `nexsms.default_price`：价格接口失效时的兜底价格
+- `nexsms.same_number_retry_limit`：OTP 超时后，同一号码可整体重试的次数
+- `credential.pin_length`：PIN 长度，当前默认 6
+- `flow.credentials_path`：成功后写入账号信息的输出文件
+
+默认策略是：
+
+- 只购买印尼号码
+- 优先使用平台返回的最低真实价格
+- OTP 超时时优先复用同一个手机号继续等，直到达到重试上限或号码快过期
+
+### 2. 通用辅助配置
+
+[config.example.yaml](/C:/Workplace/Linuxdo/adb-gopay/config.example.yaml) 主要给这些命令用：
+
+- `scan`
+- `tap-text`
+- `auto-step`
+- `auto-loop`
+- `assist`
+- `gui`
+
+如果你现在只关心 GoPay 自动化，一般只需要维护 `config.gopay.yaml`。
+
+## 快速开始
+
+### 1. 只自动打开到手机号输入页
+
+这条命令会：
+
+- 清空 GoPay 本地数据
+- 重新启动 App
+- 自动拒绝首次位置权限引导
+- 自动点击 landing 页 CTA
+- 停在手机号输入页
+
+```powershell
+python -m adb_accessibility_assistant gopay-to-phone-input --config config.gopay.yaml --mute
+```
+
+适合先验证 ADB、页面识别和基础点击是否正常。
+
+### 2. 运行完整注册流程
+
+```powershell
+python -m adb_accessibility_assistant run-gopay --config config.gopay.yaml --mute --retry-on-otp-timeout
+```
+
+这条命令会从干净状态完整执行 GoPay 流程，并在 OTP 超时时自动重试。
+
+如果你不想启用 OTP 超时后的自动重试，可以去掉 `--retry-on-otp-timeout`：
+
+```powershell
+python -m adb_accessibility_assistant run-gopay --config config.gopay.yaml --mute
+```
+
+如果你已经有一个现成手机号，想直接复用：
+
+```powershell
+python -m adb_accessibility_assistant run-gopay --config config.gopay.yaml --mute --phone +62857xxxxxxxx
+```
+
+## 常用命令
+
+### GoPay 专用命令
+
+```powershell
+python -m adb_accessibility_assistant gopay-register --config config.gopay.yaml --mute
+python -m adb_accessibility_assistant gopay-to-phone-input --config config.gopay.yaml --mute
+python -m adb_accessibility_assistant gopay-inspect --config config.gopay.yaml --mute
+python -m adb_accessibility_assistant gopay-next --config config.gopay.yaml --mute
+python -m adb_accessibility_assistant gopay-tap "OTP via SMS" --config config.gopay.yaml --mute
+python -m adb_accessibility_assistant gopay-input 85712345678 --config config.gopay.yaml --mute
+python -m adb_accessibility_assistant run-gopay --config config.gopay.yaml --mute --retry-on-otp-timeout
+```
+
+说明：
+
+- `gopay-register`：运行 GoPay 状态机主流程
+- `gopay-to-phone-input`：只走到手机号页并停住
+- `gopay-inspect`：识别当前 GoPay 页面，并把快照保存到 `artifacts/gopay`
+- `gopay-next`：在当前已识别页面上尝试点下一步
+- `gopay-tap`：按 `content-desc` 文字直接点击
+- `gopay-input`：在手机号页输入号码并尝试点 `Lanjut`
+- `run-gopay`：完整端到端执行，包含 NexSMS 买号、OTP 轮询、PIN 设置和后续页面跳转
+
+### 通用辅助命令
+
+```powershell
+python -m adb_accessibility_assistant doctor --config config.example.yaml --mute
+python -m adb_accessibility_assistant start-app --config config.example.yaml --mute
+python -m adb_accessibility_assistant scan --config config.example.yaml --mute
+python -m adb_accessibility_assistant dump-ui --config config.example.yaml --mute
+python -m adb_accessibility_assistant tap-text "Oke, lanjut" --config config.example.yaml --mute
+python -m adb_accessibility_assistant auto-step --config config.example.yaml --mute
+python -m adb_accessibility_assistant auto-loop --config config.example.yaml --mute --max-steps 10
+python -m adb_accessibility_assistant assist --config config.example.yaml --mute
+python -m adb_accessibility_assistant gui --config config.example.yaml --mute
+```
+
+## 典型使用流程
+
+推荐先按这个顺序测试：
+
+1. `doctor`，确认 `adb`、设备、OCR 正常
+2. `gopay-to-phone-input`，确认基础启动和页面识别正常
+3. `gopay-inspect`，确认当前页识别结果和 `artifacts/gopay/*.json` 快照正常
+4. `run-gopay --retry-on-otp-timeout`，执行完整流程
+
+如果某一步页面识别不对，先不要继续硬跑，先保存当前截图，再执行：
+
+```powershell
+python -m adb_accessibility_assistant gopay-inspect --config config.gopay.yaml --mute
+```
+
+然后查看 `artifacts/gopay` 目录下生成的页面快照。
+
+## 输出文件
+
+运行过程中常见输出：
+
+- `artifacts/gopay/*.json`：当前页面识别快照
+- `artifacts/nexsms_activations.sqlite3`：本地号码复用数据库
+- `credentials.json`：注册成功后输出的账号信息
+
+## 常见问题
+
+### 1. 启动就提示 `no devices/emulators found`
+
+说明 `adb` 当前看不到设备。先检查：
+
+```powershell
+adb devices
+```
+
+如果 BlueStacks 开着但看不到，通常需要重连 ADB 或重启模拟器。
+
+### 2. 页面识别错了
+
+先执行：
+
+```powershell
+python -m adb_accessibility_assistant gopay-inspect --config config.gopay.yaml --mute
+```
+
+再把当前截图和 `artifacts/gopay` 里的最新 JSON 一起看。很多页面问题不是 OCR，而是 UI dump 文本变化。
+
+### 3. OTP 超时
+
+如果你是完整流程，建议加上：
+
+```powershell
+--retry-on-otp-timeout
+```
+
+当前逻辑会优先尝试复用同一个号码继续等；只有达到重试上限或号码剩余有效期太短时，才会放弃旧号并换新号。
+
+### 4. 为什么命令都建议带 `--mute`
+
+因为当前环境如果没安装 `pyttsx3`，不开 `--mute` 可能直接初始化失败。最稳妥的默认用法就是带 `--mute`。
+
+## 之后可以补充的内容
+
+这份 README 先覆盖了当前可用的命令和流程。后续还可以继续补：
+
+- GUI 操作说明
+- `credentials.json` 字段格式
+- `artifacts/gopay/*.json` 快照示例
+- NexSMS 返回异常的排查方法

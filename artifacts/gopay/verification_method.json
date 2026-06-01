@@ -1,0 +1,128 @@
+{
+  "recorded_at": "2026-05-31T11:12:24.032311+00:00",
+  "detected_page_id": "verification_method",
+  "detected_page_title": "Verification Method Selection",
+  "detection_score": 9,
+  "matched_terms": [
+    "Pilih metode verifikasi",
+    "OTP via WhatsApp",
+    "OTP via SMS"
+  ],
+  "notes": "Verification method chooser shown before OTP delivery.",
+  "next_candidate": "Available options: OTP via WhatsApp or OTP via SMS",
+  "ocr_lines": [],
+  "actionable": [
+    {
+      "index": 4,
+      "class_name": "android.view.View",
+      "text": "",
+      "content_desc": "OTP via WhatsApp",
+      "clickable": true,
+      "enabled": true,
+      "bounds": "[24,192][1056,312]",
+      "focusable": true
+    },
+    {
+      "index": 7,
+      "class_name": "android.view.View",
+      "text": "",
+      "content_desc": "OTP via SMS",
+      "clickable": true,
+      "enabled": true,
+      "bounds": "[24,312][1056,432]",
+      "focusable": true
+    }
+  ],
+  "nodes": [
+    {
+      "index": 1,
+      "class_name": "android.view.View",
+      "text": "",
+      "content_desc": "",
+      "clickable": true,
+      "enabled": true,
+      "bounds": "[24,48][60,84]",
+      "focusable": true
+    },
+    {
+      "index": 2,
+      "class_name": "android.widget.ImageView",
+      "text": "",
+      "content_desc": "Back",
+      "clickable": false,
+      "enabled": true,
+      "bounds": "[24,48][60,84]",
+      "focusable": true
+    },
+    {
+      "index": 3,
+      "class_name": "android.view.View",
+      "text": "",
+      "content_desc": "Pilih metode verifikasi",
+      "clickable": false,
+      "enabled": true,
+      "bounds": "[24,120][315,156]",
+      "focusable": true
+    },
+    {
+      "index": 4,
+      "class_name": "android.view.View",
+      "text": "",
+      "content_desc": "OTP via WhatsApp",
+      "clickable": true,
+      "enabled": true,
+      "bounds": "[24,192][1056,312]",
+      "focusable": true
+    },
+    {
+      "index": 5,
+      "class_name": "android.widget.ImageView",
+      "text": "",
+      "content_desc": "Whatsapp",
+      "clickable": false,
+      "enabled": true,
+      "bounds": "[50,218][110,262]",
+      "focusable": true
+    },
+    {
+      "index": 6,
+      "class_name": "android.widget.ImageView",
+      "text": "",
+      "content_desc": "Next Ios",
+      "clickable": false,
+      "enabled": true,
+      "bounds": "[995,222][1031,258]",
+      "focusable": true
+    },
+    {
+      "index": 7,
+      "class_name": "android.view.View",
+      "text": "",
+      "content_desc": "OTP via SMS",
+      "clickable": true,
+      "enabled": true,
+      "bounds": "[24,312][1056,432]",
+      "focusable": true
+    },
+    {
+      "index": 8,
+      "class_name": "android.widget.ImageView",
+      "text": "",
+      "content_desc": "Receive An Sms",
+      "clickable": false,
+      "enabled": true,
+      "bounds": "[50,330][110,390]",
+      "focusable": true
+    },
+    {
+      "index": 9,
+      "class_name": "android.widget.ImageView",
+      "text": "",
+      "content_desc": "Next Ios",
+      "clickable": false,
+      "enabled": true,
+      "bounds": "[995,342][1031,378]",
+      "focusable": true
+    }
+  ]
+}

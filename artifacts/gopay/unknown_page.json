@@ -1,0 +1,494 @@
+{
+  "recorded_at": "2026-05-31T11:38:49.891832+00:00",
+  "detected_page_id": null,
+  "detected_page_title": null,
+  "detection_score": null,
+  "matched_terms": [],
+  "notes": "",
+  "next_candidate": "",
+  "ocr_lines": [],
+  "actionable": [
+    {
+      "index": 10,
+      "class_name": "android.view.View",
+      "text": "",
+      "content_desc": "0/4 langkah tuntas\nTuntasin langkah-langkah mudah ini buat perkuat perlindunganmu",
+      "clickable": true,
+      "enabled": true,
+      "bounds": "[48,635][1032,743]",
+      "focusable": true
+    },
+    {
+      "index": 11,
+      "class_name": "android.view.View",
+      "text": "",
+      "content_desc": "Izin lokasi\nDeteksi aktivitas mencurigakan buat lindungin akunmu.\n+25%",
+      "clickable": true,
+      "enabled": true,
+      "bounds": "[48,744][1032,852]",
+      "focusable": true
+    },
+    {
+      "index": 14,
+      "class_name": "android.view.View",
+      "text": "",
+      "content_desc": "Pasang PIN\nBuat mastiin cuma kamu yang bisa transaksi.\n+25%",
+      "clickable": true,
+      "enabled": true,
+      "bounds": "[48,854][1032,962]",
+      "focusable": true
+    },
+    {
+      "index": 17,
+      "class_name": "android.view.View",
+      "text": "",
+      "content_desc": "Verifikasi Email\nBuat pulihkan akun semisal kamu gak bisa masuk.\n+25%",
+      "clickable": true,
+      "enabled": true,
+      "bounds": "[48,963][1032,1071]",
+      "focusable": true
+    },
+    {
+      "index": 20,
+      "class_name": "android.view.View",
+      "text": "",
+      "content_desc": "Upgrade ke GoPay Plus\nAkses semua fitur & Jaminan Saldo GoPay Kembali.\n+25%",
+      "clickable": true,
+      "enabled": true,
+      "bounds": "[48,1073][1032,1181]",
+      "focusable": true
+    },
+    {
+      "index": 24,
+      "class_name": "android.view.View",
+      "text": "",
+      "content_desc": "Notifikasi keamanan\nBaru\nPantau keamanan akun dan aktivitas gak wajar.",
+      "clickable": true,
+      "enabled": true,
+      "bounds": "[24,1320][1056,1434]",
+      "focusable": true
+    },
+    {
+      "index": 27,
+      "class_name": "android.view.View",
+      "text": "",
+      "content_desc": "Pasang PIN\nGanti atau reset PIN kamu kapan aja dibutuhin.",
+      "clickable": true,
+      "enabled": true,
+      "bounds": "[24,1436][1056,1544]",
+      "focusable": true
+    },
+    {
+      "index": 30,
+      "class_name": "android.view.View",
+      "text": "",
+      "content_desc": "Masuk dengan Akun Google\nBaru",
+      "clickable": true,
+      "enabled": true,
+      "bounds": "[24,1545][1056,1629]",
+      "focusable": true
+    },
+    {
+      "index": 33,
+      "class_name": "android.view.View",
+      "text": "",
+      "content_desc": "Perangkat yang disimpan\nSimpan perangkat biar lebih mudah saat masuk ke GoPay.",
+      "clickable": true,
+      "enabled": true,
+      "bounds": "[24,1631][1056,1739]",
+      "focusable": true
+    },
+    {
+      "index": 36,
+      "class_name": "android.view.View",
+      "text": "",
+      "content_desc": "Jaminan Saldo GoPay Kembali\nPerlindungan ekstra buat saldomu.",
+      "clickable": true,
+      "enabled": true,
+      "bounds": "[24,1740][1056,1848]",
+      "focusable": true
+    }
+  ],
+  "nodes": [
+    {
+      "index": 1,
+      "class_name": "android.view.View",
+      "text": "",
+      "content_desc": "",
+      "clickable": true,
+      "enabled": true,
+      "bounds": "[0,36][96,120]",
+      "focusable": true
+    },
+    {
+      "index": 2,
+      "class_name": "android.widget.ImageView",
+      "text": "",
+      "content_desc": "Back",
+      "clickable": false,
+      "enabled": true,
+      "bounds": "[42,66][78,102]",
+      "focusable": true
+    },
+    {
+      "index": 3,
+      "class_name": "android.view.View",
+      "text": "",
+      "content_desc": "0",
+      "clickable": false,
+      "enabled": true,
+      "bounds": "[418,338][441,392]",
+      "focusable": true
+    },
+    {
+      "index": 4,
+      "class_name": "android.view.View",
+      "text": "",
+      "content_desc": "%",
+      "clickable": false,
+      "enabled": true,
+      "bounds": "[441,353][460,377]",
+      "focusable": true
+    },
+    {
+      "index": 5,
+      "class_name": "android.view.View",
+      "text": "",
+      "content_desc": "Ayo panjat terus!",
+      "clickable": false,
+      "enabled": true,
+      "bounds": "[502,350][662,380]",
+      "focusable": true
+    },
+    {
+      "index": 6,
+      "class_name": "android.view.View",
+      "text": "",
+      "content_desc": "Maksimalkan perlindunganmu",
+      "clickable": false,
+      "enabled": true,
+      "bounds": "[126,494][411,518]",
+      "focusable": true
+    },
+    {
+      "index": 7,
+      "class_name": "android.view.View",
+      "text": "",
+      "content_desc": "Tambah 1rb & dapetin proteksi dari penipuan digital di Indonesia",
+      "clickable": false,
+      "enabled": true,
+      "bounds": "[126,524][649,548]",
+      "focusable": true
+    },
+    {
+      "index": 8,
+      "class_name": "android.view.View",
+      "text": "",
+      "content_desc": "",
+      "clickable": true,
+      "enabled": true,
+      "bounds": "[960,485][1020,545]",
+      "focusable": true
+    },
+    {
+      "index": 9,
+      "class_name": "android.widget.ImageView",
+      "text": "",
+      "content_desc": "Next Ios",
+      "clickable": false,
+      "enabled": true,
+      "bounds": "[972,497][1008,533]",
+      "focusable": true
+    },
+    {
+      "index": 10,
+      "class_name": "android.view.View",
+      "text": "",
+      "content_desc": "0/4 langkah tuntas\nTuntasin langkah-langkah mudah ini buat perkuat perlindunganmu",
+      "clickable": true,
+      "enabled": true,
+      "bounds": "[48,635][1032,743]",
+      "focusable": true
+    },
+    {
+      "index": 11,
+      "class_name": "android.view.View",
+      "text": "",
+      "content_desc": "Izin lokasi\nDeteksi aktivitas mencurigakan buat lindungin akunmu.\n+25%",
+      "clickable": true,
+      "enabled": true,
+      "bounds": "[48,744][1032,852]",
+      "focusable": true
+    },
+    {
+      "index": 12,
+      "class_name": "android.widget.ImageView",
+      "text": "",
+      "content_desc": "Location",
+      "clickable": false,
+      "enabled": true,
+      "bounds": "[48,780][84,816]",
+      "focusable": true
+    },
+    {
+      "index": 13,
+      "class_name": "android.widget.ImageView",
+      "text": "",
+      "content_desc": "Next Ios",
+      "clickable": false,
+      "enabled": true,
+      "bounds": "[984,786][1008,810]",
+      "focusable": true
+    },
+    {
+      "index": 14,
+      "class_name": "android.view.View",
+      "text": "",
+      "content_desc": "Pasang PIN\nBuat mastiin cuma kamu yang bisa transaksi.\n+25%",
+      "clickable": true,
+      "enabled": true,
+      "bounds": "[48,854][1032,962]",
+      "focusable": true
+    },
+    {
+      "index": 15,
+      "class_name": "android.widget.ImageView",
+      "text": "",
+      "content_desc": "Password",
+      "clickable": false,
+      "enabled": true,
+      "bounds": "[48,890][84,926]",
+      "focusable": true
+    },
+    {
+      "index": 16,
+      "class_name": "android.widget.ImageView",
+      "text": "",
+      "content_desc": "Next Ios",
+      "clickable": false,
+      "enabled": true,
+      "bounds": "[984,896][1008,920]",
+      "focusable": true
+    },
+    {
+      "index": 17,
+      "class_name": "android.view.View",
+      "text": "",
+      "content_desc": "Verifikasi Email\nBuat pulihkan akun semisal kamu gak bisa masuk.\n+25%",
+      "clickable": true,
+      "enabled": true,
+      "bounds": "[48,963][1032,1071]",
+      "focusable": true
+    },
+    {
+      "index": 18,
+      "class_name": "android.widget.ImageView",
+      "text": "",
+      "content_desc": "Inbox",
+      "clickable": false,
+      "enabled": true,
+      "bounds": "[48,999][84,1035]",
+      "focusable": true
+    },
+    {
+      "index": 19,
+      "class_name": "android.widget.ImageView",
+      "text": "",
+      "content_desc": "Next Ios",
+      "clickable": false,
+      "enabled": true,
+      "bounds": "[984,1005][1008,1029]",
+      "focusable": true
+    },
+    {
+      "index": 20,
+      "class_name": "android.view.View",
+      "text": "",
+      "content_desc": "Upgrade ke GoPay Plus\nAkses semua fitur & Jaminan Saldo GoPay Kembali.\n+25%",
+      "clickable": true,
+      "enabled": true,
+      "bounds": "[48,1073][1032,1181]",
+      "focusable": true
+    },
+    {
+      "index": 21,
+      "class_name": "android.widget.ImageView",
+      "text": "",
+      "content_desc": "Gopay Plus",
+      "clickable": false,
+      "enabled": true,
+      "bounds": "[48,1109][84,1145]",
+      "focusable": true
+    },
+    {
+      "index": 22,
+      "class_name": "android.widget.ImageView",
+      "text": "",
+      "content_desc": "Next Ios",
+      "clickable": false,
+      "enabled": true,
+      "bounds": "[984,1115][1008,1139]",
+      "focusable": true
+    },
+    {
+      "index": 23,
+      "class_name": "android.view.View",
+      "text": "",
+      "content_desc": "Pengaturan keamanan lainnya",
+      "clickable": false,
+      "enabled": true,
+      "bounds": "[48,1266][393,1296]",
+      "focusable": true
+    },
+    {
+      "index": 24,
+      "class_name": "android.view.View",
+      "text": "",
+      "content_desc": "Notifikasi keamanan\nBaru\nPantau keamanan akun dan aktivitas gak wajar.",
+      "clickable": true,
+      "enabled": true,
+      "bounds": "[24,1320][1056,1434]",
+      "focusable": true
+    },
+    {
+      "index": 25,
+      "class_name": "android.widget.ImageView",
+      "text": "",
+      "content_desc": "Security Alert",
+      "clickable": false,
+      "enabled": true,
+      "bounds": "[48,1344][84,1380]",
+      "focusable": true
+    },
+    {
+      "index": 26,
+      "class_name": "android.widget.ImageView",
+      "text": "",
+      "content_desc": "Next Ios",
+      "clickable": false,
+      "enabled": true,
+      "bounds": "[996,1320][1032,1434]",
+      "focusable": true
+    },
+    {
+      "index": 27,
+      "class_name": "android.view.View",
+      "text": "",
+      "content_desc": "Pasang PIN\nGanti atau reset PIN kamu kapan aja dibutuhin.",
+      "clickable": true,
+      "enabled": true,
+      "bounds": "[24,1436][1056,1544]",
+      "focusable": true
+    },
+    {
+      "index": 28,
+      "class_name": "android.widget.ImageView",
+      "text": "",
+      "content_desc": "Password",
+      "clickable": false,
+      "enabled": true,
+      "bounds": "[48,1460][84,1496]",
+      "focusable": true
+    },
+    {
+      "index": 29,
+      "class_name": "android.widget.ImageView",
+      "text": "",
+      "content_desc": "Next Ios",
+      "clickable": false,
+      "enabled": true,
+      "bounds": "[996,1436][1032,1544]",
+      "focusable": true
+    },
+    {
+      "index": 30,
+      "class_name": "android.view.View",
+      "text": "",
+      "content_desc": "Masuk dengan Akun Google\nBaru",
+      "clickable": true,
+      "enabled": true,
+      "bounds": "[24,1545][1056,1629]",
+      "focusable": true
+    },
+    {
+      "index": 31,
+      "class_name": "android.widget.ImageView",
+      "text": "",
+      "content_desc": "Google",
+      "clickable": false,
+      "enabled": true,
+      "bounds": "[48,1569][84,1605]",
+      "focusable": true
+    },
+    {
+      "index": 32,
+      "class_name": "android.widget.Switch",
+      "text": "",
+      "content_desc": "",
+      "clickable": true,
+      "enabled": true,
+      "bounds": "[960,1566][1032,1608]",
+      "focusable": true
+    },
+    {
+      "index": 33,
+      "class_name": "android.view.View",
+      "text": "",
+      "content_desc": "Perangkat yang disimpan\nSimpan perangkat biar lebih mudah saat masuk ke GoPay.",
+      "clickable": true,
+      "enabled": true,
+      "bounds": "[24,1631][1056,1739]",
+      "focusable": true
+    },
+    {
+      "index": 34,
+      "class_name": "android.widget.ImageView",
+      "text": "",
+      "content_desc": "Devices",
+      "clickable": false,
+      "enabled": true,
+      "bounds": "[48,1655][84,1691]",
+      "focusable": true
+    },
+    {
+      "index": 35,
+      "class_name": "android.widget.ImageView",
+      "text": "",
+      "content_desc": "Next Ios",
+      "clickable": false,
+      "enabled": true,
+      "bounds": "[996,1631][1032,1739]",
+      "focusable": true
+    },
+    {
+      "index": 36,
+      "class_name": "android.view.View",
+      "text": "",
+      "content_desc": "Jaminan Saldo GoPay Kembali\nPerlindungan ekstra buat saldomu.",
+      "clickable": true,
+      "enabled": true,
+      "bounds": "[24,1740][1056,1848]",
+      "focusable": true
+    },
+    {
+      "index": 37,
+      "class_name": "android.widget.ImageView",
+      "text": "",
+      "content_desc": "Terms And Conditions",
+      "clickable": false,
+      "enabled": true,
+      "bounds": "[48,1764][84,1800]",
+      "focusable": true
+    },
+    {
+      "index": 38,
+      "class_name": "android.widget.ImageView",
+      "text": "",
+      "content_desc": "Next Ios",
+      "clickable": false,
+      "enabled": true,
+      "bounds": "[996,1740][1032,1848]",
+      "focusable": true
+    }
+  ]
+}

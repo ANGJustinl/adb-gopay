@@ -1,0 +1,134 @@
+{
+  "recorded_at": "2026-05-31T09:20:32.546352+00:00",
+  "detected_page_id": "signup_terms",
+  "detected_page_title": "Signup Terms Summary",
+  "detection_score": 0,
+  "matched_terms": [
+    "Signup Terms Summary",
+    "Lanjut"
+  ],
+  "notes": "Terms acceptance page after phone entry. Tap Lanjut at bottom to accept.",
+  "next_candidate": "Tap Lanjut to accept terms and proceed to OTP",
+  "ocr_lines": [],
+  "actionable": [
+    {
+      "index": 4,
+      "class_name": "android.view.View",
+      "text": "",
+      "content_desc": "Ketentuan Layanan",
+      "clickable": true,
+      "enabled": true,
+      "bounds": "[510,250][690,280]"
+    },
+    {
+      "index": 6,
+      "class_name": "android.view.View",
+      "text": "",
+      "content_desc": "Pemberitahuan Privasi",
+      "clickable": true,
+      "enabled": true,
+      "bounds": "[740,250][940,280]"
+    },
+    {
+      "index": 8,
+      "class_name": "android.widget.Button",
+      "text": "",
+      "content_desc": "Lanjut",
+      "clickable": true,
+      "enabled": true,
+      "bounds": "[24,1830][1056,1896]"
+    },
+    {
+      "index": 9,
+      "class_name": "android.widget.Button",
+      "text": "",
+      "content_desc": "Dismiss",
+      "clickable": true,
+      "enabled": true,
+      "bounds": "[24,1750][1056,1816]"
+    }
+  ],
+  "nodes": [
+    {
+      "index": 1,
+      "class_name": "android.view.View",
+      "text": "",
+      "content_desc": "Signup Terms Summary",
+      "clickable": false,
+      "enabled": true,
+      "bounds": "[0,0][1080,1920]"
+    },
+    {
+      "index": 2,
+      "class_name": "android.view.View",
+      "text": "",
+      "content_desc": "Penting sebelum kamu lanjut",
+      "clickable": false,
+      "enabled": true,
+      "bounds": "[24,126][1056,180]"
+    },
+    {
+      "index": 3,
+      "class_name": "android.view.View",
+      "text": "",
+      "content_desc": "Dengan melanjutkan, saya menyetujui pemrosesan data pribadi saya sesuai dengan ",
+      "clickable": false,
+      "enabled": true,
+      "bounds": "[24,200][1056,350]"
+    },
+    {
+      "index": 4,
+      "class_name": "android.view.View",
+      "text": "",
+      "content_desc": "Ketentuan Layanan",
+      "clickable": true,
+      "enabled": true,
+      "bounds": "[510,250][690,280]"
+    },
+    {
+      "index": 5,
+      "class_name": "android.view.View",
+      "text": "",
+      "content_desc": " dan ",
+      "clickable": false,
+      "enabled": true,
+      "bounds": "[690,250][740,280]"
+    },
+    {
+      "index": 6,
+      "class_name": "android.view.View",
+      "text": "",
+      "content_desc": "Pemberitahuan Privasi",
+      "clickable": true,
+      "enabled": true,
+      "bounds": "[740,250][940,280]"
+    },
+    {
+      "index": 7,
+      "class_name": "android.view.View",
+      "text": "",
+      "content_desc": ".",
+      "clickable": false,
+      "enabled": true,
+      "bounds": "[940,250][950,280]"
+    },
+    {
+      "index": 8,
+      "class_name": "android.widget.Button",
+      "text": "",
+      "content_desc": "Lanjut",
+      "clickable": true,
+      "enabled": true,
+      "bounds": "[24,1830][1056,1896]"
+    },
+    {
+      "index": 9,
+      "class_name": "android.widget.Button",
+      "text": "",
+      "content_desc": "Dismiss",
+      "clickable": true,
+      "enabled": true,
+      "bounds": "[24,1750][1056,1816]"
+    }
+  ]
+}

@@ -1,0 +1,74 @@
+# GoPay 注册配置
+# 使用前请填写自己的 NexSMS API Key
+
+# ADB 配置
+adb_path: adb
+device_serial: ""
+
+# 目标应用
+target_package: com.gojek.gopay
+launch_activity: ""
+reset_app_on_start: true
+
+# OCR 配置
+ocr_backend: rapidocr
+ocr_confidence_threshold: 0.45
+
+# 语音播报配置
+tts_enabled: false
+voice_rate: 175
+voice_name: ""
+
+# NexSMS 接码配置
+nexsms:
+  api_key: ""
+  base_url: "https://api.nexsms.net"
+  proxy: ""
+  activation_db_path: "artifacts/nexsms_activations.sqlite3"
+  # 默认只使用这个国家。
+  country_name: "Indonesia"
+  # 可选的国家回退顺序。不填写时，只使用上面的 country_name。
+  # country_order:
+  #   - Indonesia
+  #   - 6
+  service_code: "ni"
+  # 只有在 NexSMS 价格接口没有返回可用价格档位时，才会使用这个兜底价格。
+  default_price: 0.27
+  # 可选价格策略。如果不填 preferred_price，默认优先尝试当前可用最低价。
+  # min_price: 0.20
+  # max_price: 0.35
+  # preferred_price: 0.27
+  # acquire_priority: "country"   # country=按国家顺序，price=最低价优先，price_high=高价优先
+  # activation_retry_rounds: 3
+  # activation_retry_delay_ms: 2000
+  poll_interval: 5
+  poll_timeout: 120
+  # 下单新号码前，只有本地缓存号码的剩余有效期大于这个阈值时，才会复用旧号码。
+  reuse_existing_number_min_remaining_minutes: 15
+  # 本地激活记录的有效期上限，用于复用判断和本地数据库过期清理。
+  activation_validity_minutes: 20
+  # 如果 OTP 迟迟未到，允许同一个手机号整体重试的最大次数。
+  same_number_retry_limit: 3
+  # 准备继续复用同一个手机号重试时，如果剩余有效期小于等于这个阈值，就放弃该号码。
+  same_number_expiry_guard_minutes: 8
+
+# 账号信息生成规则
+credential:
+  username_length: 8
+  username_charset: "abcdefghijklmnopqrstuvwxyz"
+  pin_length: 6
+
+# 流程控制
+flow:
+  max_retries: 3
+  step_delay: 2.0
+  credentials_path: "credentials.json"
+
+# 敏感关键词（通用辅助模式下用于停机提醒）
+sensitive_keywords:
+  - otp
+  - verification code
+  - kode verifikasi
+  - pin
+  - passcode
+  - password

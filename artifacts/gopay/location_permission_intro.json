@@ -1,0 +1,202 @@
+{
+  "recorded_at": "2026-06-01T07:56:32.806241+00:00",
+  "detected_page_id": "location_permission_intro",
+  "detected_page_title": "Location Permission Intro",
+  "detection_score": 21,
+  "matched_terms": [
+    "Location Permission Screen",
+    "Izinkan akses lokasi biar GoPay kamu extra aman",
+    "Perlindungan dari penipuan",
+    "Promo sekitarmu",
+    "Data lokasi aman",
+    "Oke, lanjut",
+    "Nanti aja"
+  ],
+  "notes": "First-launch GoPay location permission intro screen. Decline it by tapping Nanti aja.",
+  "next_candidate": "Tap Nanti aja to reject the location prompt",
+  "ocr_lines": [],
+  "actionable": [
+    {
+      "index": 1,
+      "class_name": "android.view.View",
+      "text": "",
+      "content_desc": "Location Permission Screen\nBahasa Indonesia (ID)",
+      "clickable": true,
+      "enabled": true,
+      "bounds": "[0,0][1080,1920]",
+      "focusable": true
+    },
+    {
+      "index": 14,
+      "class_name": "android.widget.Button",
+      "text": "",
+      "content_desc": "Oke, lanjut",
+      "clickable": true,
+      "enabled": true,
+      "bounds": "[24,1764][1056,1830]",
+      "focusable": true
+    },
+    {
+      "index": 15,
+      "class_name": "android.widget.Button",
+      "text": "",
+      "content_desc": "Nanti aja",
+      "clickable": true,
+      "enabled": true,
+      "bounds": "[477,1830][603,1902]",
+      "focusable": true
+    }
+  ],
+  "nodes": [
+    {
+      "index": 1,
+      "class_name": "android.view.View",
+      "text": "",
+      "content_desc": "Location Permission Screen\nBahasa Indonesia (ID)",
+      "clickable": true,
+      "enabled": true,
+      "bounds": "[0,0][1080,1920]",
+      "focusable": true
+    },
+    {
+      "index": 2,
+      "class_name": "android.widget.ImageView",
+      "text": "",
+      "content_desc": "Language",
+      "clickable": false,
+      "enabled": true,
+      "bounds": "[784,78][820,114]",
+      "focusable": true
+    },
+    {
+      "index": 3,
+      "class_name": "android.view.View",
+      "text": "",
+      "content_desc": "Izinkan akses lokasi biar GoPay kamu extra aman",
+      "clickable": false,
+      "enabled": true,
+      "bounds": "[148,132][932,174]",
+      "focusable": true
+    },
+    {
+      "index": 4,
+      "class_name": "android.widget.ImageView",
+      "text": "",
+      "content_desc": "Go Pay Top Banner Location Permission",
+      "clickable": false,
+      "enabled": true,
+      "bounds": "[368,192][725,420]",
+      "focusable": true
+    },
+    {
+      "index": 5,
+      "class_name": "android.widget.ImageView",
+      "text": "",
+      "content_desc": "Fraud And Security",
+      "clickable": false,
+      "enabled": true,
+      "bounds": "[48,480][108,540]",
+      "focusable": true
+    },
+    {
+      "index": 6,
+      "class_name": "android.view.View",
+      "text": "",
+      "content_desc": "Perlindungan dari penipuan",
+      "clickable": false,
+      "enabled": true,
+      "bounds": "[132,480][410,510]",
+      "focusable": true
+    },
+    {
+      "index": 7,
+      "class_name": "android.view.View",
+      "text": "",
+      "content_desc": "Dari lokasimu, kami bisa tahu aktivitas mencurigakan dan lindungin akunmu.",
+      "clickable": false,
+      "enabled": true,
+      "bounds": "[132,516][760,540]",
+      "focusable": true
+    },
+    {
+      "index": 8,
+      "class_name": "android.widget.ImageView",
+      "text": "",
+      "content_desc": "Promo",
+      "clickable": false,
+      "enabled": true,
+      "bounds": "[48,588][108,648]",
+      "focusable": true
+    },
+    {
+      "index": 9,
+      "class_name": "android.view.View",
+      "text": "",
+      "content_desc": "Promo sekitarmu",
+      "clickable": false,
+      "enabled": true,
+      "bounds": "[132,588][304,618]",
+      "focusable": true
+    },
+    {
+      "index": 10,
+      "class_name": "android.view.View",
+      "text": "",
+      "content_desc": "Kami bisa kasih tahu kalau lagi ada promo di wilayah kamu.",
+      "clickable": false,
+      "enabled": true,
+      "bounds": "[132,624][614,648]",
+      "focusable": true
+    },
+    {
+      "index": 11,
+      "class_name": "android.widget.ImageView",
+      "text": "",
+      "content_desc": "Safe",
+      "clickable": false,
+      "enabled": true,
+      "bounds": "[48,696][108,756]",
+      "focusable": true
+    },
+    {
+      "index": 12,
+      "class_name": "android.view.View",
+      "text": "",
+      "content_desc": "Data lokasi aman",
+      "clickable": false,
+      "enabled": true,
+      "bounds": "[132,696][302,726]",
+      "focusable": true
+    },
+    {
+      "index": 13,
+      "class_name": "android.view.View",
+      "text": "",
+      "content_desc": "Lokasimu selalu terenkripsi dan gak akan dibagikan ke siapa pun tanpa izinmu",
+      "clickable": false,
+      "enabled": true,
+      "bounds": "[132,732][772,756]",
+      "focusable": true
+    },
+    {
+      "index": 14,
+      "class_name": "android.widget.Button",
+      "text": "",
+      "content_desc": "Oke, lanjut",
+      "clickable": true,
+      "enabled": true,
+      "bounds": "[24,1764][1056,1830]",
+      "focusable": true
+    },
+    {
+      "index": 15,
+      "class_name": "android.widget.Button",
+      "text": "",
+      "content_desc": "Nanti aja",
+      "clickable": true,
+      "enabled": true,
+      "bounds": "[477,1830][603,1902]",
+      "focusable": true
+    }
+  ]
+}

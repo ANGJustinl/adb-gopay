@@ -1,0 +1,397 @@
+{
+  "recorded_at": "2026-06-01T08:45:16.533613+00:00",
+  "detected_page_id": "pin_input",
+  "detected_page_title": "PIN Input",
+  "detection_score": 6,
+  "matched_terms": [
+    "Pasang PIN",
+    "PIN GoPay bikin bayar-bayar"
+  ],
+  "notes": "PIN creation page shown after account profile setup.",
+  "next_candidate": "Enter the generated PIN",
+  "ocr_lines": [],
+  "actionable": [
+    {
+      "index": 14,
+      "class_name": "android.widget.Button",
+      "text": "",
+      "content_desc": "here",
+      "clickable": true,
+      "enabled": true,
+      "bounds": "[212,650][263,683]",
+      "focusable": true
+    },
+    {
+      "index": 16,
+      "class_name": "android.view.View",
+      "text": "",
+      "content_desc": "1",
+      "clickable": true,
+      "enabled": true,
+      "bounds": "[0,1464][360,1578]",
+      "focusable": true
+    },
+    {
+      "index": 17,
+      "class_name": "android.view.View",
+      "text": "",
+      "content_desc": "2",
+      "clickable": true,
+      "enabled": true,
+      "bounds": "[360,1464][720,1578]",
+      "focusable": true
+    },
+    {
+      "index": 18,
+      "class_name": "android.view.View",
+      "text": "",
+      "content_desc": "3",
+      "clickable": true,
+      "enabled": true,
+      "bounds": "[720,1464][1080,1578]",
+      "focusable": true
+    },
+    {
+      "index": 19,
+      "class_name": "android.view.View",
+      "text": "",
+      "content_desc": "4",
+      "clickable": true,
+      "enabled": true,
+      "bounds": "[0,1578][360,1692]",
+      "focusable": true
+    },
+    {
+      "index": 20,
+      "class_name": "android.view.View",
+      "text": "",
+      "content_desc": "5",
+      "clickable": true,
+      "enabled": true,
+      "bounds": "[360,1578][720,1692]",
+      "focusable": true
+    },
+    {
+      "index": 21,
+      "class_name": "android.view.View",
+      "text": "",
+      "content_desc": "6",
+      "clickable": true,
+      "enabled": true,
+      "bounds": "[720,1578][1080,1692]",
+      "focusable": true
+    },
+    {
+      "index": 22,
+      "class_name": "android.view.View",
+      "text": "",
+      "content_desc": "7",
+      "clickable": true,
+      "enabled": true,
+      "bounds": "[0,1692][360,1806]",
+      "focusable": true
+    },
+    {
+      "index": 23,
+      "class_name": "android.view.View",
+      "text": "",
+      "content_desc": "8",
+      "clickable": true,
+      "enabled": true,
+      "bounds": "[360,1692][720,1806]",
+      "focusable": true
+    },
+    {
+      "index": 24,
+      "class_name": "android.view.View",
+      "text": "",
+      "content_desc": "9",
+      "clickable": true,
+      "enabled": true,
+      "bounds": "[720,1692][1080,1806]",
+      "focusable": true
+    },
+    {
+      "index": 25,
+      "class_name": "android.view.View",
+      "text": "",
+      "content_desc": "0",
+      "clickable": true,
+      "enabled": true,
+      "bounds": "[360,1806][720,1920]",
+      "focusable": true
+    },
+    {
+      "index": 26,
+      "class_name": "android.view.View",
+      "text": "",
+      "content_desc": "Clear",
+      "clickable": true,
+      "enabled": true,
+      "bounds": "[720,1806][1080,1920]",
+      "focusable": true
+    }
+  ],
+  "nodes": [
+    {
+      "index": 1,
+      "class_name": "android.view.View",
+      "text": "",
+      "content_desc": "",
+      "clickable": true,
+      "enabled": true,
+      "bounds": "[30,59][66,95]",
+      "focusable": true
+    },
+    {
+      "index": 2,
+      "class_name": "android.widget.ImageView",
+      "text": "",
+      "content_desc": "Back",
+      "clickable": false,
+      "enabled": true,
+      "bounds": "[30,59][66,95]",
+      "focusable": true
+    },
+    {
+      "index": 3,
+      "class_name": "android.view.View",
+      "text": "",
+      "content_desc": "Pasang PIN",
+      "clickable": false,
+      "enabled": true,
+      "bounds": "[84,59][233,95]",
+      "focusable": true
+    },
+    {
+      "index": 4,
+      "class_name": "android.view.View",
+      "text": "",
+      "content_desc": "",
+      "clickable": true,
+      "enabled": true,
+      "bounds": "[1014,59][1050,95]",
+      "focusable": true
+    },
+    {
+      "index": 5,
+      "class_name": "android.widget.ImageView",
+      "text": "",
+      "content_desc": "Info",
+      "clickable": false,
+      "enabled": true,
+      "bounds": "[1014,59][1050,95]",
+      "focusable": true
+    },
+    {
+      "index": 6,
+      "class_name": "android.view.View",
+      "text": "",
+      "content_desc": "PIN GoPay bikin bayar-bayar dan log in jadi lebih aman. Pilih PIN yang unik dan jangan dibagiin ke siapa pun.",
+      "clickable": false,
+      "enabled": true,
+      "bounds": "[24,132][1056,192]",
+      "focusable": true
+    },
+    {
+      "index": 7,
+      "class_name": "android.view.View",
+      "text": "",
+      "content_desc": "",
+      "clickable": true,
+      "enabled": true,
+      "bounds": "[972,249][1032,333]",
+      "focusable": true
+    },
+    {
+      "index": 8,
+      "class_name": "android.widget.ImageView",
+      "text": "",
+      "content_desc": "Read Message",
+      "clickable": false,
+      "enabled": true,
+      "bounds": "[972,273][1008,309]",
+      "focusable": true
+    },
+    {
+      "index": 9,
+      "class_name": "android.view.View",
+      "text": "",
+      "content_desc": "Tips for secure PIN",
+      "clickable": false,
+      "enabled": true,
+      "bounds": "[48,414][223,438]",
+      "focusable": true
+    },
+    {
+      "index": 10,
+      "class_name": "android.view.View",
+      "text": "",
+      "content_desc": "1\nAvoid repeated and sequential digit, e.g., 123456.",
+      "clickable": false,
+      "enabled": true,
+      "bounds": "[48,438][1032,510]",
+      "focusable": true
+    },
+    {
+      "index": 11,
+      "class_name": "android.view.View",
+      "text": "",
+      "content_desc": "2\nBe hard to guess. Don't use date of birth, phone number, name, etc.",
+      "clickable": false,
+      "enabled": true,
+      "bounds": "[48,510][1032,582]",
+      "focusable": true
+    },
+    {
+      "index": 12,
+      "class_name": "android.view.View",
+      "text": "",
+      "content_desc": "3\nCreate a unique PIN that you haven't used before.",
+      "clickable": false,
+      "enabled": true,
+      "bounds": "[48,582][1032,654]",
+      "focusable": true
+    },
+    {
+      "index": 13,
+      "class_name": "android.view.View",
+      "text": "",
+      "content_desc": "For more tips, check",
+      "clickable": false,
+      "enabled": true,
+      "bounds": "[42,650][225,683]",
+      "focusable": true
+    },
+    {
+      "index": 14,
+      "class_name": "android.widget.Button",
+      "text": "",
+      "content_desc": "here",
+      "clickable": true,
+      "enabled": true,
+      "bounds": "[212,650][263,683]",
+      "focusable": true
+    },
+    {
+      "index": 15,
+      "class_name": "android.widget.Button",
+      "text": "",
+      "content_desc": "Lanjut",
+      "clickable": true,
+      "enabled": false,
+      "bounds": "[24,1374][1056,1440]",
+      "focusable": true
+    },
+    {
+      "index": 16,
+      "class_name": "android.view.View",
+      "text": "",
+      "content_desc": "1",
+      "clickable": true,
+      "enabled": true,
+      "bounds": "[0,1464][360,1578]",
+      "focusable": true
+    },
+    {
+      "index": 17,
+      "class_name": "android.view.View",
+      "text": "",
+      "content_desc": "2",
+      "clickable": true,
+      "enabled": true,
+      "bounds": "[360,1464][720,1578]",
+      "focusable": true
+    },
+    {
+      "index": 18,
+      "class_name": "android.view.View",
+      "text": "",
+      "content_desc": "3",
+      "clickable": true,
+      "enabled": true,
+      "bounds": "[720,1464][1080,1578]",
+      "focusable": true
+    },
+    {
+      "index": 19,
+      "class_name": "android.view.View",
+      "text": "",
+      "content_desc": "4",
+      "clickable": true,
+      "enabled": true,
+      "bounds": "[0,1578][360,1692]",
+      "focusable": true
+    },
+    {
+      "index": 20,
+      "class_name": "android.view.View",
+      "text": "",
+      "content_desc": "5",
+      "clickable": true,
+      "enabled": true,
+      "bounds": "[360,1578][720,1692]",
+      "focusable": true
+    },
+    {
+      "index": 21,
+      "class_name": "android.view.View",
+      "text": "",
+      "content_desc": "6",
+      "clickable": true,
+      "enabled": true,
+      "bounds": "[720,1578][1080,1692]",
+      "focusable": true
+    },
+    {
+      "index": 22,
+      "class_name": "android.view.View",
+      "text": "",
+      "content_desc": "7",
+      "clickable": true,
+      "enabled": true,
+      "bounds": "[0,1692][360,1806]",
+      "focusable": true
+    },
+    {
+      "index": 23,
+      "class_name": "android.view.View",
+      "text": "",
+      "content_desc": "8",
+      "clickable": true,
+      "enabled": true,
+      "bounds": "[360,1692][720,1806]",
+      "focusable": true
+    },
+    {
+      "index": 24,
+      "class_name": "android.view.View",
+      "text": "",
+      "content_desc": "9",
+      "clickable": true,
+      "enabled": true,
+      "bounds": "[720,1692][1080,1806]",
+      "focusable": true
+    },
+    {
+      "index": 25,
+      "class_name": "android.view.View",
+      "text": "",
+      "content_desc": "0",
+      "clickable": true,
+      "enabled": true,
+      "bounds": "[360,1806][720,1920]",
+      "focusable": true
+    },
+    {
+      "index": 26,
+      "class_name": "android.view.View",
+      "text": "",
+      "content_desc": "Clear",
+      "clickable": true,
+      "enabled": true,
+      "bounds": "[720,1806][1080,1920]",
+      "focusable": true
+    }
+  ]
+}

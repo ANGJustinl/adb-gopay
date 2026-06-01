@@ -1,0 +1,519 @@
+{
+  "recorded_at": "2026-06-01T07:53:51.334493+00:00",
+  "detected_page_id": "profile_dashboard",
+  "detected_page_title": "Profile Dashboard",
+  "detection_score": 12,
+  "matched_terms": [
+    "Pengaturan & keamanan",
+    "Perlindungan akun",
+    "Pengaturan akun & aplikasi",
+    "Bantuan"
+  ],
+  "notes": "Profile and security page reached from the Profil bottom tab.",
+  "next_candidate": "Tap the Perlindungan akun section to open the protection checklist",
+  "ocr_lines": [],
+  "actionable": [
+    {
+      "index": 2,
+      "class_name": "android.widget.ImageView",
+      "text": "",
+      "content_desc": "asddsasd\n+6285198222413\nMasukkin email kamu\nGanti profil\nQR Ku",
+      "clickable": true,
+      "enabled": true,
+      "bounds": "[24,144][1056,312]",
+      "focusable": true
+    },
+    {
+      "index": 5,
+      "class_name": "android.view.View",
+      "text": "",
+      "content_desc": "Perlindungan akun\n0%\nAyo panjat terus!\nTuntasin langkah-langkah mudah ini buat perkuat perlindunganmu",
+      "clickable": true,
+      "enabled": true,
+      "bounds": "[24,342][1056,660]",
+      "focusable": true
+    },
+    {
+      "index": 6,
+      "class_name": "android.view.View",
+      "text": "",
+      "content_desc": "Perkuat perlindunganmu di sini",
+      "clickable": true,
+      "enabled": true,
+      "bounds": "[48,576][1032,636]",
+      "focusable": true
+    },
+    {
+      "index": 9,
+      "class_name": "android.widget.ImageView",
+      "text": "",
+      "content_desc": "Dilindungi oleh",
+      "clickable": true,
+      "enabled": true,
+      "bounds": "[24,660][1056,732]",
+      "focusable": true
+    },
+    {
+      "index": 11,
+      "class_name": "android.view.View",
+      "text": "",
+      "content_desc": "Pengaturan akun & aplikasi\nKontrol pengaturan aplikasi, data, aplikasi terhubung, dan lainnya.",
+      "clickable": true,
+      "enabled": true,
+      "bounds": "[24,756][1056,864]",
+      "focusable": true
+    },
+    {
+      "index": 14,
+      "class_name": "android.view.View",
+      "text": "",
+      "content_desc": "Bantuan\nKirim dan pantau laporanmu di sini.",
+      "clickable": true,
+      "enabled": true,
+      "bounds": "[24,866][1056,974]",
+      "focusable": true
+    },
+    {
+      "index": 17,
+      "class_name": "android.view.View",
+      "text": "",
+      "content_desc": "Pengingat\nCek hal-hal yang masih perlu kamu selesaikan.",
+      "clickable": true,
+      "enabled": true,
+      "bounds": "[24,975][1056,1083]",
+      "focusable": true
+    },
+    {
+      "index": 20,
+      "class_name": "android.view.View",
+      "text": "",
+      "content_desc": "Pelajari\nFitur keamanan akun\nCustomer Service 24 jam\nJaminan Saldo Kembali\nPrivasi & proteksi data",
+      "clickable": true,
+      "enabled": true,
+      "bounds": "[24,1107][1056,1374]",
+      "focusable": true
+    },
+    {
+      "index": 22,
+      "class_name": "android.view.View",
+      "text": "",
+      "content_desc": "Privasimu yang paling utama\nKami menjaga keamanan data pribadi, kartu, & transaksi kamu dan tidak akan disebar ke mana pun.\nCek gimana kami melindungi datamu",
+      "clickable": true,
+      "enabled": true,
+      "bounds": "[24,1374][1056,1578]",
+      "focusable": true
+    },
+    {
+      "index": 26,
+      "class_name": "android.widget.Button",
+      "text": "",
+      "content_desc": "Beri kami nilai",
+      "clickable": true,
+      "enabled": true,
+      "bounds": "[36,1722][252,1776]",
+      "focusable": true
+    },
+    {
+      "index": 31,
+      "class_name": "android.widget.ImageView",
+      "text": "",
+      "content_desc": "Beranda",
+      "clickable": true,
+      "enabled": true,
+      "bounds": "[0,1824][216,1908]",
+      "focusable": true
+    },
+    {
+      "index": 32,
+      "class_name": "android.widget.ImageView",
+      "text": "",
+      "content_desc": "Keuangan",
+      "clickable": true,
+      "enabled": true,
+      "bounds": "[216,1824][432,1908]",
+      "focusable": true
+    },
+    {
+      "index": 33,
+      "class_name": "android.view.View",
+      "text": "",
+      "content_desc": "QRIS",
+      "clickable": true,
+      "enabled": true,
+      "bounds": "[432,1824][648,1908]",
+      "focusable": true
+    },
+    {
+      "index": 34,
+      "class_name": "android.widget.ImageView",
+      "text": "",
+      "content_desc": "Riwayat",
+      "clickable": true,
+      "enabled": true,
+      "bounds": "[648,1824][864,1908]",
+      "focusable": true
+    },
+    {
+      "index": 35,
+      "class_name": "android.widget.ImageView",
+      "text": "",
+      "content_desc": "Profil",
+      "clickable": true,
+      "enabled": true,
+      "bounds": "[864,1824][1080,1908]",
+      "focusable": true
+    }
+  ],
+  "nodes": [
+    {
+      "index": 1,
+      "class_name": "android.view.View",
+      "text": "",
+      "content_desc": "Pengaturan & keamanan",
+      "clickable": false,
+      "enabled": true,
+      "bounds": "[30,60][350,96]",
+      "focusable": true
+    },
+    {
+      "index": 2,
+      "class_name": "android.widget.ImageView",
+      "text": "",
+      "content_desc": "asddsasd\n+6285198222413\nMasukkin email kamu\nGanti profil\nQR Ku",
+      "clickable": true,
+      "enabled": true,
+      "bounds": "[24,144][1056,312]",
+      "focusable": true
+    },
+    {
+      "index": 3,
+      "class_name": "android.view.View",
+      "text": "",
+      "content_desc": "",
+      "clickable": true,
+      "enabled": true,
+      "bounds": "[969,182][1032,245]",
+      "focusable": true
+    },
+    {
+      "index": 4,
+      "class_name": "android.widget.ImageView",
+      "text": "",
+      "content_desc": "Scan",
+      "clickable": false,
+      "enabled": true,
+      "bounds": "[983,195][1019,231]",
+      "focusable": true
+    },
+    {
+      "index": 5,
+      "class_name": "android.view.View",
+      "text": "",
+      "content_desc": "Perlindungan akun\n0%\nAyo panjat terus!\nTuntasin langkah-langkah mudah ini buat perkuat perlindunganmu",
+      "clickable": true,
+      "enabled": true,
+      "bounds": "[24,342][1056,660]",
+      "focusable": true
+    },
+    {
+      "index": 6,
+      "class_name": "android.view.View",
+      "text": "",
+      "content_desc": "Perkuat perlindunganmu di sini",
+      "clickable": true,
+      "enabled": true,
+      "bounds": "[48,576][1032,636]",
+      "focusable": true
+    },
+    {
+      "index": 7,
+      "class_name": "android.widget.ImageView",
+      "text": "",
+      "content_desc": "Go Pay Emoticon Fraud And Security",
+      "clickable": false,
+      "enabled": true,
+      "bounds": "[66,588][102,624]",
+      "focusable": true
+    },
+    {
+      "index": 8,
+      "class_name": "android.widget.ImageView",
+      "text": "",
+      "content_desc": "Next",
+      "clickable": false,
+      "enabled": true,
+      "bounds": "[990,594][1014,618]",
+      "focusable": true
+    },
+    {
+      "index": 9,
+      "class_name": "android.widget.ImageView",
+      "text": "",
+      "content_desc": "Dilindungi oleh",
+      "clickable": true,
+      "enabled": true,
+      "bounds": "[24,660][1056,732]",
+      "focusable": true
+    },
+    {
+      "index": 10,
+      "class_name": "android.widget.ImageView",
+      "text": "",
+      "content_desc": "Next Ios",
+      "clickable": false,
+      "enabled": true,
+      "bounds": "[1020,684][1044,708]",
+      "focusable": true
+    },
+    {
+      "index": 11,
+      "class_name": "android.view.View",
+      "text": "",
+      "content_desc": "Pengaturan akun & aplikasi\nKontrol pengaturan aplikasi, data, aplikasi terhubung, dan lainnya.",
+      "clickable": true,
+      "enabled": true,
+      "bounds": "[24,756][1056,864]",
+      "focusable": true
+    },
+    {
+      "index": 12,
+      "class_name": "android.widget.ImageView",
+      "text": "",
+      "content_desc": "Settings",
+      "clickable": false,
+      "enabled": true,
+      "bounds": "[48,780][84,816]",
+      "focusable": true
+    },
+    {
+      "index": 13,
+      "class_name": "android.widget.ImageView",
+      "text": "",
+      "content_desc": "Next Ios",
+      "clickable": false,
+      "enabled": true,
+      "bounds": "[996,756][1032,864]",
+      "focusable": true
+    },
+    {
+      "index": 14,
+      "class_name": "android.view.View",
+      "text": "",
+      "content_desc": "Bantuan\nKirim dan pantau laporanmu di sini.",
+      "clickable": true,
+      "enabled": true,
+      "bounds": "[24,866][1056,974]",
+      "focusable": true
+    },
+    {
+      "index": 15,
+      "class_name": "android.widget.ImageView",
+      "text": "",
+      "content_desc": "Contribute",
+      "clickable": false,
+      "enabled": true,
+      "bounds": "[48,890][84,926]",
+      "focusable": true
+    },
+    {
+      "index": 16,
+      "class_name": "android.widget.ImageView",
+      "text": "",
+      "content_desc": "Next Ios",
+      "clickable": false,
+      "enabled": true,
+      "bounds": "[996,866][1032,974]",
+      "focusable": true
+    },
+    {
+      "index": 17,
+      "class_name": "android.view.View",
+      "text": "",
+      "content_desc": "Pengingat\nCek hal-hal yang masih perlu kamu selesaikan.",
+      "clickable": true,
+      "enabled": true,
+      "bounds": "[24,975][1056,1083]",
+      "focusable": true
+    },
+    {
+      "index": 18,
+      "class_name": "android.widget.ImageView",
+      "text": "",
+      "content_desc": "Notification",
+      "clickable": false,
+      "enabled": true,
+      "bounds": "[48,999][84,1035]",
+      "focusable": true
+    },
+    {
+      "index": 19,
+      "class_name": "android.widget.ImageView",
+      "text": "",
+      "content_desc": "Next Ios",
+      "clickable": false,
+      "enabled": true,
+      "bounds": "[996,975][1032,1083]",
+      "focusable": true
+    },
+    {
+      "index": 20,
+      "class_name": "android.view.View",
+      "text": "",
+      "content_desc": "Pelajari\nFitur keamanan akun\nCustomer Service 24 jam\nJaminan Saldo Kembali\nPrivasi & proteksi data",
+      "clickable": true,
+      "enabled": true,
+      "bounds": "[24,1107][1056,1374]",
+      "focusable": true
+    },
+    {
+      "index": 21,
+      "class_name": "android.widget.ImageView",
+      "text": "",
+      "content_desc": "Next",
+      "clickable": false,
+      "enabled": true,
+      "bounds": "[996,1155][1020,1179]",
+      "focusable": true
+    },
+    {
+      "index": 22,
+      "class_name": "android.view.View",
+      "text": "",
+      "content_desc": "Privasimu yang paling utama\nKami menjaga keamanan data pribadi, kartu, & transaksi kamu dan tidak akan disebar ke mana pun.\nCek gimana kami melindungi datamu",
+      "clickable": true,
+      "enabled": true,
+      "bounds": "[24,1374][1056,1578]",
+      "focusable": true
+    },
+    {
+      "index": 23,
+      "class_name": "android.widget.ImageView",
+      "text": "",
+      "content_desc": "Go Pay Emoticon Document",
+      "clickable": false,
+      "enabled": true,
+      "bounds": "[66,1506][102,1542]",
+      "focusable": true
+    },
+    {
+      "index": 24,
+      "class_name": "android.widget.ImageView",
+      "text": "",
+      "content_desc": "Next",
+      "clickable": false,
+      "enabled": true,
+      "bounds": "[978,1506][1014,1542]",
+      "focusable": true
+    },
+    {
+      "index": 25,
+      "class_name": "android.view.View",
+      "text": "",
+      "content_desc": "Pesan sponsor dari\nApa pun impianmu, kami siap bantuin kamu jadi jago atur keuangan dan tabungan. Yuk, #FinanSiap bareng GoPay!\nIkuti kami di:\nVersi\n2.8.0",
+      "clickable": false,
+      "enabled": true,
+      "bounds": "[24,1638][1056,1920]",
+      "focusable": true
+    },
+    {
+      "index": 26,
+      "class_name": "android.widget.Button",
+      "text": "",
+      "content_desc": "Beri kami nilai",
+      "clickable": true,
+      "enabled": true,
+      "bounds": "[36,1722][252,1776]",
+      "focusable": true
+    },
+    {
+      "index": 27,
+      "class_name": "android.widget.ImageView",
+      "text": "",
+      "content_desc": "",
+      "clickable": true,
+      "enabled": true,
+      "bounds": "[36,1866][126,1920]",
+      "focusable": true
+    },
+    {
+      "index": 28,
+      "class_name": "android.widget.ImageView",
+      "text": "",
+      "content_desc": "",
+      "clickable": true,
+      "enabled": true,
+      "bounds": "[156,1866][246,1920]",
+      "focusable": true
+    },
+    {
+      "index": 29,
+      "class_name": "android.widget.ImageView",
+      "text": "",
+      "content_desc": "",
+      "clickable": true,
+      "enabled": true,
+      "bounds": "[276,1866][366,1920]",
+      "focusable": true
+    },
+    {
+      "index": 30,
+      "class_name": "android.widget.ImageView",
+      "text": "",
+      "content_desc": "",
+      "clickable": true,
+      "enabled": true,
+      "bounds": "[484,1788][596,1872]",
+      "focusable": true
+    },
+    {
+      "index": 31,
+      "class_name": "android.widget.ImageView",
+      "text": "",
+      "content_desc": "Beranda",
+      "clickable": true,
+      "enabled": true,
+      "bounds": "[0,1824][216,1908]",
+      "focusable": true
+    },
+    {
+      "index": 32,
+      "class_name": "android.widget.ImageView",
+      "text": "",
+      "content_desc": "Keuangan",
+      "clickable": true,
+      "enabled": true,
+      "bounds": "[216,1824][432,1908]",
+      "focusable": true
+    },
+    {
+      "index": 33,
+      "class_name": "android.view.View",
+      "text": "",
+      "content_desc": "QRIS",
+      "clickable": true,
+      "enabled": true,
+      "bounds": "[432,1824][648,1908]",
+      "focusable": true
+    },
+    {
+      "index": 34,
+      "class_name": "android.widget.ImageView",
+      "text": "",
+      "content_desc": "Riwayat",
+      "clickable": true,
+      "enabled": true,
+      "bounds": "[648,1824][864,1908]",
+      "focusable": true
+    },
+    {
+      "index": 35,
+      "class_name": "android.widget.ImageView",
+      "text": "",
+      "content_desc": "Profil",
+      "clickable": true,
+      "enabled": true,
+      "bounds": "[864,1824][1080,1908]",
+      "focusable": true
+    }
+  ]
+}

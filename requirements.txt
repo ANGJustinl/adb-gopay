@@ -1,0 +1,7 @@
+Pillow>=10.4.0
+PyYAML>=6.0.2
+numpy>=2.1.0
+rapidocr-onnxruntime>=1.4.3
+pytesseract>=0.3.13
+requests>=2.31.0
+pyttsx3

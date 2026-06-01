@@ -1,0 +1,50 @@
+# 通用辅助模式示例配置
+# 这份配置适合 `scan`、`auto-step`、`assist` 这类通用命令
+
+# ADB 配置
+adb_path: adb
+device_serial: ""
+
+# 目标应用
+target_package: com.example.app
+launch_activity: ""
+
+# 通用轮询与 OCR 配置
+polling_interval: 1.5
+ocr_backend: rapidocr
+ocr_confidence_threshold: 0.45
+
+# 语音播报配置
+tts_enabled: false
+voice_rate: 175
+voice_name: ""
+speech_preview_limit: 8
+
+# 敏感关键词：屏幕上出现这些词时，自动化会停止并等待人工接管
+sensitive_keywords:
+  - otp
+  - verification code
+  - kode verifikasi
+  - pin
+  - passcode
+  - password
+
+# 规则示例：按顺序匹配，命中后执行对应动作
+rules:
+  - name: dismiss_optional_dialog
+    # any_of 中任意一个文本命中即可
+    any_of:
+      - Oke, lanjut
+      - Nanti aja
+    action: tap_first
+    max_retries: 2
+    delay_after: 1.2
+    speak_after: "已执行可选按钮。"
+
+  - name: close_banner
+    any_of:
+      - Tutup
+      - Close
+    action: tap_first
+    max_retries: 1
+    delay_after: 0.8

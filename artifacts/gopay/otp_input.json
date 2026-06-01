@@ -1,0 +1,98 @@
+{
+  "recorded_at": "2026-05-31T11:40:07.759583+00:00",
+  "detected_page_id": "otp_input",
+  "detected_page_title": "OTP Input",
+  "detection_score": 9,
+  "matched_terms": [
+    "Masukkan OTP yang kami SMS",
+    "OTP, wajib Bidang Masukan",
+    "Coba Metode Lainnya"
+  ],
+  "notes": "OTP code entry page after verification method selection.",
+  "next_candidate": "Enter the received OTP into the input field",
+  "ocr_lines": [],
+  "actionable": [
+    {
+      "index": 7,
+      "class_name": "android.widget.Button",
+      "text": "",
+      "content_desc": "Coba Metode Lainnya",
+      "clickable": true,
+      "enabled": true,
+      "bounds": "[24,377][268,431]",
+      "focusable": true
+    }
+  ],
+  "nodes": [
+    {
+      "index": 1,
+      "class_name": "android.widget.Button",
+      "text": "",
+      "content_desc": "",
+      "clickable": true,
+      "enabled": true,
+      "bounds": "[0,36][84,120]",
+      "focusable": true
+    },
+    {
+      "index": 2,
+      "class_name": "android.widget.ImageView",
+      "text": "",
+      "content_desc": "Back",
+      "clickable": false,
+      "enabled": true,
+      "bounds": "[24,60][60,96]",
+      "focusable": true
+    },
+    {
+      "index": 3,
+      "class_name": "android.view.View",
+      "text": "",
+      "content_desc": "Masukkan OTP yang kami SMS",
+      "clickable": false,
+      "enabled": true,
+      "bounds": "[24,120][423,156]",
+      "focusable": true
+    },
+    {
+      "index": 4,
+      "class_name": "android.view.View",
+      "text": "",
+      "content_desc": "Kode-nya kami kirim ke +62*******4012",
+      "clickable": false,
+      "enabled": true,
+      "bounds": "[24,159][413,189]",
+      "focusable": true
+    },
+    {
+      "index": 5,
+      "class_name": "android.view.View",
+      "text": "",
+      "content_desc": "OTP, wajib Bidang Masukan",
+      "clickable": false,
+      "enabled": true,
+      "bounds": "[0,189][1080,329]",
+      "focusable": true
+    },
+    {
+      "index": 6,
+      "class_name": "android.widget.EditText",
+      "text": "",
+      "content_desc": "",
+      "clickable": true,
+      "enabled": true,
+      "bounds": "[24,261][863,327]",
+      "focusable": true
+    },
+    {
+      "index": 7,
+      "class_name": "android.widget.Button",
+      "text": "",
+      "content_desc": "Coba Metode Lainnya",
+      "clickable": true,
+      "enabled": true,
+      "bounds": "[24,377][268,431]",
+      "focusable": true
+    }
+  ]
+}
