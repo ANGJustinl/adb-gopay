@@ -2,6 +2,11 @@
 
 这是一个基于 `adb`、Android UI dump 和可选 OCR 的 GoPay 自动化工具。
 
+需要准备：
+
+* 一个NexSMS接码账号
+* 开启adb的蓝叠模拟器(默认端口是[http://localhost:5555](http://localhost:5555/)), 然后安装了Gopay APP
+
 目前的主流程包括：
 
 - 冷启动前自动清理 `com.gojek.gopay`
