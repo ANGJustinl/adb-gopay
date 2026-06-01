@@ -240,3 +240,6 @@ python -m adb_accessibility_assistant gopay-inspect --config config.gopay.yaml -
 ### 4. 为什么命令都建议带 `--mute`
 
 因为当前环境如果没安装 `pyttsx3`，不开 `--mute` 可能直接初始化失败。最稳妥的默认用法就是带 `--mute`。
+
+## 友情链接
+[LINUX DO - 新的理想型社区](https://linux.do/)
