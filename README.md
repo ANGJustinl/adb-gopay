@@ -1,8 +1,8 @@
 # adb-gopay 使用教程
 
-这是一个基于 `adb`、Android UI dump 和可选 OCR 的 GoPay 自动化工具，当前重点是 GoPay 注册流程自动化，同时保留通用的辅助模式命令。
+这是一个基于 `adb`、Android UI dump 和可选 OCR 的 GoPay 自动化工具。
 
-目前已经接通的主流程包括：
+目前的主流程包括：
 
 - 冷启动前自动清理 `com.gojek.gopay`
 - 自动拒绝首次位置权限引导
@@ -12,6 +12,11 @@
 - 进入 `Profil` -> `Pengaturan & keamanan` -> `Perlindungan akun`
 - 点击 `Pasang PIN`，完成 PIN 和二次确认
 - 如果 PIN 后跳到 WhatsApp OTP，会切到 `Coba Metode Lainnya`，再改走 `OTP via SMS`
+
+# 省流:
+```powershell
+python -m adb_accessibility_assistant run-gopay --config config.gopay.yaml --mute --retry-on-otp-timeout
+```
 
 ## 目录说明
 
@@ -26,12 +31,7 @@
 - Python 3.12+
 - 已安装并可直接执行 `adb`
 - BlueStacks 或真实 Android 设备
-- 建议安装 `ADBKeyboard.apk`，方便稳定输入文本
-
-OCR 和语音是可选的：
-
-- 推荐 OCR：`rapidocr-onnxruntime`
-- 可选 TTS：`pyttsx3`
+- 安装仓库内的 `ADBKeyboard.apk`，方便稳定输入文本
 
 如果没有安装 `pyttsx3`，命令行运行时请带 `--mute`。
 
@@ -41,12 +41,6 @@ OCR 和语音是可选的：
 python -m venv .venv
 .venv\Scripts\Activate.ps1
 python -m pip install -r requirements.txt
-```
-
-如果你想使用离线语音播报：
-
-```powershell
-python -m pip install pyttsx3
 ```
 
 如果你不想每次手动激活虚拟环境，也可以使用项目自带脚本：
@@ -109,8 +103,6 @@ python -m adb_accessibility_assistant doctor --config config.gopay.yaml --mute
 - `auto-loop`
 - `assist`
 - `gui`
-
-如果你现在只关心 GoPay 自动化，一般只需要维护 `config.gopay.yaml`。
 
 ## 快速开始
 
@@ -248,12 +240,3 @@ python -m adb_accessibility_assistant gopay-inspect --config config.gopay.yaml -
 ### 4. 为什么命令都建议带 `--mute`
 
 因为当前环境如果没安装 `pyttsx3`，不开 `--mute` 可能直接初始化失败。最稳妥的默认用法就是带 `--mute`。
-
-## 之后可以补充的内容
-
-这份 README 先覆盖了当前可用的命令和流程。后续还可以继续补：
-
-- GUI 操作说明
-- `credentials.json` 字段格式
-- `artifacts/gopay/*.json` 快照示例
-- NexSMS 返回异常的排查方法
