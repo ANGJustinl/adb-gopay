@@ -1,0 +1,324 @@
+{
+  "recorded_at": "2026-06-02T03:12:58.559903+00:00",
+  "detected_page_id": null,
+  "detected_page_title": null,
+  "detection_score": null,
+  "matched_terms": [],
+  "notes": "",
+  "next_candidate": "",
+  "ocr_lines": [],
+  "actionable": [
+    {
+      "index": 8,
+      "class_name": "android.widget.Button",
+      "text": "",
+      "content_desc": "Masalah login atau daftar?",
+      "clickable": true,
+      "enabled": true,
+      "bounds": "[24,420][366,474]",
+      "focusable": true
+    },
+    {
+      "index": 9,
+      "class_name": "android.view.View",
+      "text": "",
+      "content_desc": "1",
+      "clickable": true,
+      "enabled": true,
+      "bounds": "[0,1464][360,1578]",
+      "focusable": true
+    },
+    {
+      "index": 10,
+      "class_name": "android.view.View",
+      "text": "",
+      "content_desc": "2",
+      "clickable": true,
+      "enabled": true,
+      "bounds": "[360,1464][720,1578]",
+      "focusable": true
+    },
+    {
+      "index": 11,
+      "class_name": "android.view.View",
+      "text": "",
+      "content_desc": "3",
+      "clickable": true,
+      "enabled": true,
+      "bounds": "[720,1464][1080,1578]",
+      "focusable": true
+    },
+    {
+      "index": 12,
+      "class_name": "android.view.View",
+      "text": "",
+      "content_desc": "4",
+      "clickable": true,
+      "enabled": true,
+      "bounds": "[0,1578][360,1692]",
+      "focusable": true
+    },
+    {
+      "index": 13,
+      "class_name": "android.view.View",
+      "text": "",
+      "content_desc": "5",
+      "clickable": true,
+      "enabled": true,
+      "bounds": "[360,1578][720,1692]",
+      "focusable": true
+    },
+    {
+      "index": 14,
+      "class_name": "android.view.View",
+      "text": "",
+      "content_desc": "6",
+      "clickable": true,
+      "enabled": true,
+      "bounds": "[720,1578][1080,1692]",
+      "focusable": true
+    },
+    {
+      "index": 15,
+      "class_name": "android.view.View",
+      "text": "",
+      "content_desc": "7",
+      "clickable": true,
+      "enabled": true,
+      "bounds": "[0,1692][360,1806]",
+      "focusable": true
+    },
+    {
+      "index": 16,
+      "class_name": "android.view.View",
+      "text": "",
+      "content_desc": "8",
+      "clickable": true,
+      "enabled": true,
+      "bounds": "[360,1692][720,1806]",
+      "focusable": true
+    },
+    {
+      "index": 17,
+      "class_name": "android.view.View",
+      "text": "",
+      "content_desc": "9",
+      "clickable": true,
+      "enabled": true,
+      "bounds": "[720,1692][1080,1806]",
+      "focusable": true
+    },
+    {
+      "index": 18,
+      "class_name": "android.view.View",
+      "text": "",
+      "content_desc": "0",
+      "clickable": true,
+      "enabled": true,
+      "bounds": "[360,1806][720,1920]",
+      "focusable": true
+    },
+    {
+      "index": 19,
+      "class_name": "android.view.View",
+      "text": "",
+      "content_desc": "Clear",
+      "clickable": true,
+      "enabled": true,
+      "bounds": "[720,1806][1080,1920]",
+      "focusable": true
+    }
+  ],
+  "nodes": [
+    {
+      "index": 1,
+      "class_name": "android.view.View",
+      "text": "",
+      "content_desc": "",
+      "clickable": true,
+      "enabled": true,
+      "bounds": "[30,59][66,95]",
+      "focusable": true
+    },
+    {
+      "index": 2,
+      "class_name": "android.widget.ImageView",
+      "text": "",
+      "content_desc": "Cancel",
+      "clickable": false,
+      "enabled": true,
+      "bounds": "[30,59][66,95]",
+      "focusable": true
+    },
+    {
+      "index": 3,
+      "class_name": "android.view.View",
+      "text": "",
+      "content_desc": "Masukkin PIN kamu",
+      "clickable": false,
+      "enabled": true,
+      "bounds": "[84,59][345,95]",
+      "focusable": true
+    },
+    {
+      "index": 4,
+      "class_name": "android.view.View",
+      "text": "",
+      "content_desc": "",
+      "clickable": true,
+      "enabled": true,
+      "bounds": "[1014,59][1050,95]",
+      "focusable": true
+    },
+    {
+      "index": 5,
+      "class_name": "android.widget.ImageView",
+      "text": "",
+      "content_desc": "Help",
+      "clickable": false,
+      "enabled": true,
+      "bounds": "[1014,59][1050,95]",
+      "focusable": true
+    },
+    {
+      "index": 6,
+      "class_name": "android.view.View",
+      "text": "",
+      "content_desc": "Ketik GoPay PIN kamu untuk masuk.",
+      "clickable": false,
+      "enabled": true,
+      "bounds": "[24,144][499,180]",
+      "focusable": true
+    },
+    {
+      "index": 7,
+      "class_name": "android.view.View",
+      "text": "",
+      "content_desc": "Ini cepat, aman, dan tidak memerlukan OTP.",
+      "clickable": false,
+      "enabled": true,
+      "bounds": "[24,192][445,222]",
+      "focusable": true
+    },
+    {
+      "index": 8,
+      "class_name": "android.widget.Button",
+      "text": "",
+      "content_desc": "Masalah login atau daftar?",
+      "clickable": true,
+      "enabled": true,
+      "bounds": "[24,420][366,474]",
+      "focusable": true
+    },
+    {
+      "index": 9,
+      "class_name": "android.view.View",
+      "text": "",
+      "content_desc": "1",
+      "clickable": true,
+      "enabled": true,
+      "bounds": "[0,1464][360,1578]",
+      "focusable": true
+    },
+    {
+      "index": 10,
+      "class_name": "android.view.View",
+      "text": "",
+      "content_desc": "2",
+      "clickable": true,
+      "enabled": true,
+      "bounds": "[360,1464][720,1578]",
+      "focusable": true
+    },
+    {
+      "index": 11,
+      "class_name": "android.view.View",
+      "text": "",
+      "content_desc": "3",
+      "clickable": true,
+      "enabled": true,
+      "bounds": "[720,1464][1080,1578]",
+      "focusable": true
+    },
+    {
+      "index": 12,
+      "class_name": "android.view.View",
+      "text": "",
+      "content_desc": "4",
+      "clickable": true,
+      "enabled": true,
+      "bounds": "[0,1578][360,1692]",
+      "focusable": true
+    },
+    {
+      "index": 13,
+      "class_name": "android.view.View",
+      "text": "",
+      "content_desc": "5",
+      "clickable": true,
+      "enabled": true,
+      "bounds": "[360,1578][720,1692]",
+      "focusable": true
+    },
+    {
+      "index": 14,
+      "class_name": "android.view.View",
+      "text": "",
+      "content_desc": "6",
+      "clickable": true,
+      "enabled": true,
+      "bounds": "[720,1578][1080,1692]",
+      "focusable": true
+    },
+    {
+      "index": 15,
+      "class_name": "android.view.View",
+      "text": "",
+      "content_desc": "7",
+      "clickable": true,
+      "enabled": true,
+      "bounds": "[0,1692][360,1806]",
+      "focusable": true
+    },
+    {
+      "index": 16,
+      "class_name": "android.view.View",
+      "text": "",
+      "content_desc": "8",
+      "clickable": true,
+      "enabled": true,
+      "bounds": "[360,1692][720,1806]",
+      "focusable": true
+    },
+    {
+      "index": 17,
+      "class_name": "android.view.View",
+      "text": "",
+      "content_desc": "9",
+      "clickable": true,
+      "enabled": true,
+      "bounds": "[720,1692][1080,1806]",
+      "focusable": true
+    },
+    {
+      "index": 18,
+      "class_name": "android.view.View",
+      "text": "",
+      "content_desc": "0",
+      "clickable": true,
+      "enabled": true,
+      "bounds": "[360,1806][720,1920]",
+      "focusable": true
+    },
+    {
+      "index": 19,
+      "class_name": "android.view.View",
+      "text": "",
+      "content_desc": "Clear",
+      "clickable": true,
+      "enabled": true,
+      "bounds": "[720,1806][1080,1920]",
+      "focusable": true
+    }
+  ]
+}

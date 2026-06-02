@@ -15,6 +15,7 @@ from .phone_activation_store import PhoneActivationStore
 
 
 PHONE_CODE_TIMEOUT_ERROR_PREFIX = "PHONE_CODE_TIMEOUT::"
+PHONE_NUMBER_REJECTED_ERROR_PREFIX = "PHONE_NUMBER_REJECTED::"
 DEFAULT_ACTIVATION_VALIDITY_SECONDS = 20 * 60
 
 _NO_NUMBERS_PATTERN = re.compile(
@@ -101,6 +102,11 @@ def extract_verification_code(raw_code_or_text: Any) -> str:
 def is_phone_code_timeout_error(message: str) -> bool:
     """Return True when the error message is an OTP polling timeout."""
     return str(message or "").startswith(PHONE_CODE_TIMEOUT_ERROR_PREFIX)
+
+
+def is_phone_number_rejected_error(message: str) -> bool:
+    """Return True when GoPay rejected the submitted phone number / login path."""
+    return str(message or "").startswith(PHONE_NUMBER_REJECTED_ERROR_PREFIX)
 
 
 def _is_indonesia_alias(value: Any) -> bool:

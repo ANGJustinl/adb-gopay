@@ -10,6 +10,15 @@ target_package: com.gojek.gopay
 launch_activity: ""
 reset_app_on_start: true
 
+# !!! DANGER / HIGH RISK !!!
+# 开启后，一旦 GoPay 出现验证码冷却弹窗，程序会直接操作你当前可见的 BlueStacks 窗口，
+# 自动打开设置 -> 手机 -> 机型下拉框 -> 切到下一个不同的预设 -> 保存。
+# 这是桌面 UI 自动化，不是改 adb 参数。
+# 运行期间请不要操作电脑，开启自动点击导致的后果请您自负。
+# 如果你有多个 BlueStacks 窗口，务必填写 bluestacks_window_title，避免切错实例。
+bluestacks_switch_preset_on_cooldown: false
+bluestacks_window_title: ""
+
 # OCR 配置
 ocr_backend: rapidocr
 ocr_confidence_threshold: 0.45

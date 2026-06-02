@@ -77,6 +77,8 @@ class AppConfig:
     device_serial: str | None = None
     target_package: str = "com.example.app"
     launch_activity: str | None = None
+    bluestacks_window_title: str | None = None
+    bluestacks_switch_preset_on_cooldown: bool = False
     reset_app_on_start: bool = False
     polling_interval: float = 1.5
     ocr_backend: str = "rapidocr"
@@ -146,6 +148,8 @@ def load_config(path: str | Path) -> AppConfig:
         device_serial=str(raw["device_serial"]).strip() if raw.get("device_serial") else None,
         target_package=str(raw.get("target_package") or "com.example.app"),
         launch_activity=str(raw["launch_activity"]).strip() if raw.get("launch_activity") else None,
+        bluestacks_window_title=str(raw["bluestacks_window_title"]).strip() if raw.get("bluestacks_window_title") else None,
+        bluestacks_switch_preset_on_cooldown=bool(raw.get("bluestacks_switch_preset_on_cooldown", False)),
         reset_app_on_start=bool(raw.get("reset_app_on_start", False)),
         polling_interval=float(raw.get("polling_interval", 1.5)),
         ocr_backend=str(raw.get("ocr_backend") or "rapidocr"),
@@ -177,6 +181,8 @@ def load_gopay_config(path: str | Path) -> tuple[AppConfig, NexSMSConfig, Creden
         device_serial=str(raw["device_serial"]).strip() if raw.get("device_serial") else None,
         target_package=str(raw.get("target_package") or "com.gojek.gopay"),
         launch_activity=str(raw["launch_activity"]).strip() if raw.get("launch_activity") else None,
+        bluestacks_window_title=str(raw["bluestacks_window_title"]).strip() if raw.get("bluestacks_window_title") else None,
+        bluestacks_switch_preset_on_cooldown=bool(raw.get("bluestacks_switch_preset_on_cooldown", True)),
         reset_app_on_start=bool(raw.get("reset_app_on_start", True)),
         ocr_backend=str(raw.get("ocr_backend") or "rapidocr"),
         ocr_confidence_threshold=float(raw.get("ocr_confidence_threshold", 0.45)),

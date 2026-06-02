@@ -9,7 +9,12 @@ from .config import load_gopay_config
 from .gopay_flow import FlowState
 from .gopay_pages import actionable_nodes, detect_gopay_page
 from .gopay_recording import build_page_record, save_page_record
-from .nexsms_client import NexSMSError, is_phone_code_timeout_error
+from .nexsms_client import (
+    PHONE_NUMBER_REJECTED_ERROR_PREFIX,
+    NexSMSError,
+    is_phone_code_timeout_error,
+    is_phone_number_rejected_error,
+)
 from .ocr import OCRUnavailableError
 from .runtime import create_gopay_runtime
 from .ui_dump import dump_ui_nodes
@@ -21,6 +26,46 @@ StopCallbackRegistrar = Callable[[Callable[[], None]], None] | None
 def _register_stop_callback(register_stop: StopCallbackRegistrar, stop_fn: Callable[[], None]) -> None:
     if register_stop:
         register_stop(stop_fn)
+
+
+def _maybe_rotate_bluestacks_preset_after_cooldown(
+    *,
+    enabled: bool,
+    window_title: str | None,
+    adb=None,
+    log_callback: LogCallback = None,
+) -> None:
+    if not enabled:
+        return
+    log = log_callback or (lambda _message: None)
+    try:
+        from .bluestacks_player_ui import switch_to_different_device_preset
+
+        result = switch_to_different_device_preset(window_title=window_title)
+        log(
+            "BlueStacks preset rotated after cooldown: "
+            f"{result.before_preset} -> {result.after_preset}"
+        )
+        if not result.changed:
+            log("Warning: BlueStacks preset switch completed but the preset name did not change.")
+        if adb is not None:
+            try:
+                model_result = adb.run("shell", "getprop", "ro.product.model")
+                brand_result = adb.run("shell", "getprop", "ro.product.brand")
+                manufacturer_result = adb.run("shell", "getprop", "ro.product.manufacturer")
+                assert isinstance(model_result.stdout, str)
+                assert isinstance(brand_result.stdout, str)
+                assert isinstance(manufacturer_result.stdout, str)
+                log(
+                    "BlueStacks runtime props after preset switch: "
+                    f"model={model_result.stdout.strip()} "
+                    f"brand={brand_result.stdout.strip()} "
+                    f"manufacturer={manufacturer_result.stdout.strip()}"
+                )
+            except Exception as exc:
+                log(f"Warning: failed to verify BlueStacks runtime props after preset switch: {exc}")
+    except Exception as exc:
+        log(f"Warning: failed to rotate BlueStacks preset after cooldown: {exc}")
 
 
 def prepare_phone_input_task(
@@ -152,7 +197,10 @@ def run_gopay_full_task(
         if log_callback:
             log_callback(f"Reusing phone: {phone}")
 
-    max_phone_cycles = 3 if retry_on_otp_timeout else 1
+    max_phone_cycles = max(
+        3 if retry_on_otp_timeout else 1,
+        max(1, int(runtime.flow.config.max_retries)),
+    )
     user_supplied_phone = bool(phone)
 
     def snapshot_phone_meta() -> dict[str, float | int | str]:
@@ -206,6 +254,33 @@ def run_gopay_full_task(
             if log_callback:
                 log_callback(f"Warning: failed to invalidate phone number {phone_number}: {exc}")
 
+    def retry_with_new_phone(reason: str, *, error_state: FlowState) -> dict[str, Any] | None:
+        nonlocal pending_phone_meta, phone_cycle, attempt
+        if reason.startswith("otp_cooldown:"):
+            _maybe_rotate_bluestacks_preset_after_cooldown(
+                enabled=bool(runtime.app_config.bluestacks_switch_preset_on_cooldown),
+                window_title=runtime.app_config.bluestacks_window_title,
+                adb=runtime.adb,
+                log_callback=log_callback,
+            )
+        if user_supplied_phone:
+            return {
+                "ok": False,
+                "status": "error",
+                "state": error_state.value,
+                "message": f"User-supplied phone was rejected: {reason}",
+                "data": {"flow_status": runtime.flow.get_status()},
+            }
+        invalidate_current_phone(reason)
+        pending_phone_meta = {}
+        phone_cycle += 1
+        attempt += 1
+        if phone_cycle > max_phone_cycles:
+            return None
+        if log_callback:
+            log_callback("Will retry with a new phone number...")
+        return {"retry": True}
+
     pending_phone_meta = snapshot_phone_meta()
     attempt = 1
     phone_cycle = 1
@@ -257,6 +332,14 @@ def run_gopay_full_task(
 
             if final_state in (FlowState.ERROR, FlowState.WAITING_OTP):
                 err = runtime.flow.ctx.error_message or final_state.value
+                if is_phone_number_rejected_error(err):
+                    reason = err[len(PHONE_NUMBER_REJECTED_ERROR_PREFIX):].strip() or "phone_rejected"
+                    retry_result = retry_with_new_phone(reason, error_state=final_state)
+                    if retry_result and retry_result.get("retry"):
+                        continue
+                    if retry_result:
+                        return retry_result
+                    break
                 if retry_on_otp_timeout and is_phone_code_timeout_error(err):
                     phone_meta = snapshot_phone_meta()
                     invalidate, reason = should_invalidate_phone(phone_meta)
@@ -326,6 +409,14 @@ def run_gopay_full_task(
 
         except (AndroidDeviceError, NexSMSError, RuntimeError, ValueError, OCRUnavailableError) as exc:
             error_text = str(exc)
+            if is_phone_number_rejected_error(error_text):
+                reason = error_text[len(PHONE_NUMBER_REJECTED_ERROR_PREFIX):].strip() or "phone_rejected"
+                retry_result = retry_with_new_phone(reason, error_state=runtime.flow.state)
+                if retry_result and retry_result.get("retry"):
+                    continue
+                if retry_result:
+                    return retry_result
+                break
             if retry_on_otp_timeout and is_phone_code_timeout_error(error_text):
                 phone_meta = snapshot_phone_meta()
                 invalidate, reason = should_invalidate_phone(phone_meta)

@@ -14,7 +14,12 @@ from .config import AppConfig
 from .credential_generator import generate_pin, generate_username, save_credentials
 from .gopay_pages import detect_gopay_page
 from .models import ScreenSnapshot
-from .nexsms_client import NexSMSClient, NexSMSError, is_phone_code_timeout_error
+from .nexsms_client import (
+    PHONE_NUMBER_REJECTED_ERROR_PREFIX,
+    NexSMSClient,
+    NexSMSError,
+    is_phone_code_timeout_error,
+)
 from .ocr import OCREngine
 from .tts import Speaker
 from .ui_dump import UINode, dump_ui_nodes, find_first_node, parse_bounds, tap_node
@@ -51,6 +56,7 @@ class FlowState(str, Enum):
 class FlowContext:
     """Context data for the registration flow."""
     phone_number: str = ""
+    phone_submitted: bool = False
     phone_acquired_at_epoch: float = 0.0
     phone_expiry_epoch: float = 0.0
     phone_retry_count: int = 0
@@ -344,6 +350,7 @@ class GoPayRegistrationFlow:
         self.adb.start_app(self.config.target_package, self.config.launch_activity)
         self._last_page_id = None
         self._last_ui_nodes = []
+        self.ctx.phone_submitted = False
         self.ctx.pin_flow_source = ""
         self.ctx.otp_code = ""
         self.ctx.otp_resend_count = 0
@@ -370,9 +377,16 @@ class GoPayRegistrationFlow:
         try:
             nodes = self._capture_ui_nodes()
             page_match = detect_gopay_page(nodes)
+            page_id = page_match.spec.page_id if page_match else ""
+            detected = UI_PAGE_STATE_MAP.get(page_id) if page_id else None
+            if self._handle_rejected_phone_page(
+                page_id=page_id,
+                detected_state=detected,
+                nodes=nodes,
+            ):
+                return self.ctx.current_state
             if page_match:
-                self._last_page_id = page_match.spec.page_id
-                detected = UI_PAGE_STATE_MAP.get(page_match.spec.page_id)
+                self._last_page_id = page_id
                 if detected and detected != self.ctx.current_state:
                     self.log(f"Detected page via UI dump: {page_match.spec.page_id}")
                     self._set_state(detected)
@@ -387,6 +401,107 @@ class GoPayRegistrationFlow:
             self._set_state(detected)
 
         return detected
+
+    def _normalize_ui_term(self, value: str) -> str:
+        return " ".join(str(value or "").casefold().split())
+
+    def _ui_haystack(self, nodes: list[UINode]) -> str:
+        parts: list[str] = []
+        for node in nodes:
+            if node.text:
+                parts.append(self._normalize_ui_term(node.text))
+            if node.content_desc:
+                parts.append(self._normalize_ui_term(node.content_desc))
+        return " ".join(parts)
+
+    def _set_phone_rejected_error(self, reason: str) -> None:
+        normalized_reason = str(reason or "phone_rejected").strip() or "phone_rejected"
+        message = (
+            f"{PHONE_NUMBER_REJECTED_ERROR_PREFIX}{normalized_reason}"
+            f" phone={self.ctx.phone_number}"
+        )
+        self.ctx.error_message = message
+        self.log(f"Phone rejected by GoPay: {normalized_reason} ({self.ctx.phone_number})")
+        self.ctx.current_state = FlowState.ERROR
+
+    def _dismiss_modal_ack(self, nodes: list[UINode]) -> None:
+        ack_node = find_first_node(
+            nodes,
+            terms=["Oke", "OK", "Dismiss"],
+            clickable=True,
+            enabled=True,
+        )
+        if ack_node:
+            x, y = tap_node(self.adb, ack_node)
+            self.log(f"Dismissed blocking modal via UI dump at ({x}, {y})")
+            time.sleep(0.5)
+
+    def _handle_rejected_phone_page(
+        self,
+        *,
+        page_id: str,
+        detected_state: FlowState | None,
+        nodes: list[UINode],
+    ) -> bool:
+        """Detect existing-account / rejected-number branches after phone submission."""
+        if not self.ctx.phone_submitted or not self.ctx.phone_number:
+            return False
+        if self.ctx.otp_phase != "initial" or self.ctx.otp_code or self.ctx.username or self.ctx.pin:
+            return False
+
+        if page_id in {"pin_input", "pin_confirm"}:
+            self._set_phone_rejected_error("existing_account_requires_pin")
+            return True
+
+        haystack = self._ui_haystack(nodes)
+        if haystack:
+            cooldown_terms = [
+                "istirahat duluuu",
+                "terlalu banyak percobaan",
+                "coba lagi dalam 60 menit",
+            ]
+            for term in cooldown_terms:
+                if self._normalize_ui_term(term) in haystack:
+                    self._dismiss_modal_ack(nodes)
+                    self._set_phone_rejected_error(f"otp_cooldown:{term}")
+                    return True
+
+            relogin_terms = [
+                "masukkin pin kamu",
+                "ketik gopay pin kamu untuk masuk",
+                "tidak memerlukan otp",
+                "masalah login atau daftar",
+                "sambungkan akun google kamu",
+                "untuk menghubungkan akun google",
+                "cara lain buat login",
+                "ini bukan akun saya",
+                "saya mau bikin akun baru",
+                "選擇帳戶",
+                "以繼續使用「gopay」",
+                "新增其他帳戶",
+                "autentikasi ponsel",
+                "autentikasi telepon",
+                "autentikasi perangkat",
+                "masuk lagi",
+                "login lagi",
+                "masuk kembali",
+                "re-login",
+                "sign in again",
+                "verifikasi perangkat",
+                "verifikasi nomor hp",
+                "nomor ini sudah terdaftar",
+                "akun ini sudah terdaftar",
+                "sudah terdaftar",
+            ]
+            for term in relogin_terms:
+                if self._normalize_ui_term(term) in haystack:
+                    self._set_phone_rejected_error(f"existing_account_relogin:{term}")
+                    return True
+
+        if detected_state == FlowState.WAITING_PHONE_INPUT:
+            self._set_phone_rejected_error("returned_to_phone_input_after_submit")
+            return True
+        return False
 
     def _get_phone_number(self) -> str:
         """Get a phone number from NexSMS platform."""
@@ -422,6 +537,7 @@ class GoPayRegistrationFlow:
             "Got phone number: "
             f"{phone} (country={order_result['country_name']}, price={order_result['price']})"
         )
+        self.ctx.phone_submitted = False
         if self.ctx.phone_expiry_epoch > 0:
             remaining_minutes = max(0.0, (self.ctx.phone_expiry_epoch - time.time()) / 60.0)
             expiry_source = str(order_result.get("expiry_source") or "unknown")
@@ -880,6 +996,7 @@ class GoPayRegistrationFlow:
         self.ctx.last_otp_code = ""
         self.ctx.otp_status_baseline = ""
         self.ctx.otp_phase = "initial"
+        self.ctx.phone_submitted = True
         self._tap_confirm()
         self._set_state(FlowState.PHONE_ENTERED)
 
@@ -1097,6 +1214,8 @@ class GoPayRegistrationFlow:
             if self.ctx.current_state == FlowState.INIT:
                 self._start_clean_session()
             self._detect_and_update_state()
+            if self.ctx.current_state == FlowState.ERROR:
+                return self.ctx.current_state
 
             if self.ctx.current_state == FlowState.WAITING_PHONE_INPUT:
                 return self.ctx.current_state
@@ -1128,6 +1247,8 @@ class GoPayRegistrationFlow:
 
         # Detect current page state
         self._detect_and_update_state()
+        if self.ctx.current_state == FlowState.ERROR:
+            return self.ctx.current_state
 
         # Handle current state
         match self.ctx.current_state:

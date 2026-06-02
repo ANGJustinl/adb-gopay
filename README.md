@@ -180,6 +180,86 @@ python -m adb_accessibility_assistant assist --config config.example.yaml --mute
 python -m adb_accessibility_assistant gui --config config.example.yaml --mute
 ```
 
+## BlueStacks 设备型号管理
+
+项目现在提供两种 BlueStacks 机型管理方式：
+
+- 直接改 [bluestacks.conf](</C:/ProgramData/BlueStacks_nxt/bluestacks.conf>) 里的实例字段
+- 通过 BlueStacks 播放器外部顶部菜单的 `设置 -> 手机` 页面切换预设机型
+
+### 1. 直接改 bluestacks.conf
+
+先查看当前实例：
+
+```powershell
+python -m adb_accessibility_assistant bluestacks-device-show
+python -m adb_accessibility_assistant bluestacks-device-show --instance Rvc64
+```
+
+更新某个实例的设备资料：
+
+```powershell
+python -m adb_accessibility_assistant bluestacks-device-set --instance Rvc64 --brand samsung --manufacturer samsung --model SM-S918B
+```
+
+如果 BlueStacks 正在运行，需要先停掉，或者让命令代为关闭：
+
+```powershell
+python -m adb_accessibility_assistant bluestacks-device-set --instance Rvc64 --brand samsung --manufacturer samsung --model SM-S918B --stop-if-running
+```
+
+只预览改动、不落盘：
+
+```powershell
+python -m adb_accessibility_assistant bluestacks-device-set --instance Rvc64 --model SM-S918B --dry-run
+```
+
+注意：
+
+- 每次正式写入前，命令都会自动创建 `bluestacks.conf.<时间戳>.bak` 备份
+- 改的是实例级字段，不是全局字段
+- 写入后需要重新启动对应实例，新的机型字段才会生效
+
+### 2. 通过播放器 UI 切换预设机型
+
+这条命令走的是已经验证过的 BlueStacks 外部播放器路径：
+
+- 顶部三横线菜单
+- `设置`
+- `手机`
+- 预设机型下拉框
+- `储存变更`
+
+切到下一个预设：
+
+```powershell
+python -m adb_accessibility_assistant bluestacks-preset-switch --instance Rvc64
+```
+
+明确切到某个预设：
+
+```powershell
+python -m adb_accessibility_assistant bluestacks-preset-switch --instance Rvc64 --preset "Samsung Galaxy S20+"
+```
+
+如果窗口标题不是默认值，可以显式指定：
+
+```powershell
+python -m adb_accessibility_assistant bluestacks-preset-switch --instance Rvc64 --window-title "BlueStacks App Player 1" --preset "XIAOMI 11T PRO"
+```
+
+默认会在保存后回读 `bluestacks.conf`，再通过 `adb getprop` 验证运行时机型。如果只想切换、不做 ADB 验证：
+
+```powershell
+python -m adb_accessibility_assistant bluestacks-preset-switch --instance Rvc64 --no-verify-adb
+```
+
+注意：
+
+- 这条命令依赖 Windows 桌面会话和可见的 BlueStacks 窗口
+- 当前实现优先适配 BlueStacks 5 的默认播放器布局
+- `--preset` 的查找方式是沿下拉框向前循环，所以预设名需要和界面显示文本一致
+
 ## HTTP API
 
 如果你需要让别的程序远程调用这套流程，可以启动内置 API server：
