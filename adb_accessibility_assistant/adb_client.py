@@ -10,12 +10,16 @@ class AndroidDeviceError(RuntimeError):
 
 
 class ADBClient:
-    def __init__(self, adb_path: str = "adb", device_serial: str | None = None) -> None:
+    def __init__(self, adb_path: str = "adb", device_serial: str | None = None, adb_port: str | None = None) -> None:
         self.adb_path = adb_path
         self.device_serial = device_serial
+        self.adb_port = adb_port
 
     def _command(self, *args: str) -> list[str]:
         command = [self.adb_path]
+        # Only include -P and -s options when their values are present (not None)
+        if self.adb_port:
+            command.extend(["-P", self.adb_port])
         if self.device_serial:
             command.extend(["-s", self.device_serial])
         command.extend(args)

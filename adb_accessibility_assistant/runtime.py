@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from .adb_client import ADBClient
+from .bluestacks_mim import resolve_active_clone_target
 from .automation import AutomationEngine
 from .config import (
     AppConfig,
@@ -45,6 +46,7 @@ def create_runtime(
     *,
     adb_path: str | None = None,
     device_serial: str | None = None,
+    adb_port: str | None = None,
     target_package: str | None = None,
     launch_activity: str | None = None,
     tts_enabled: bool | None = None,
@@ -55,6 +57,15 @@ def create_runtime(
         config.adb_path = adb_path
     if device_serial:
         config.device_serial = device_serial
+    if adb_port:
+        config.adb_port = adb_port
+    if not device_serial and not adb_port:
+        active_serial, active_port = resolve_active_clone_target(
+            enabled=bool(config.bluestacks_use_temp_clone),
+        )
+        if active_serial:
+            config.device_serial = active_serial
+            config.adb_port = active_port
     if target_package:
         config.target_package = target_package
     if launch_activity:
@@ -62,7 +73,7 @@ def create_runtime(
     if tts_enabled is not None:
         config.tts_enabled = tts_enabled
 
-    adb = ADBClient(adb_path=config.adb_path, device_serial=config.device_serial)
+    adb = ADBClient(adb_path=config.adb_path, device_serial=config.device_serial, adb_port=config.adb_port)
     ocr = create_ocr_engine(config.ocr_backend)
     speaker = Speaker(enabled=config.tts_enabled, rate=config.voice_rate, voice_name=config.voice_name)
     engine = AutomationEngine(adb=adb, ocr=ocr, speaker=speaker, config=config, log_callback=log_callback)
@@ -74,6 +85,7 @@ def create_gopay_runtime(
     *,
     adb_path: str | None = None,
     device_serial: str | None = None,
+    adb_port: str | None = None,
     tts_enabled: bool | None = None,
     log_callback=None,
 ) -> GoPayRuntime:
@@ -83,6 +95,7 @@ def create_gopay_runtime(
         config_path: Path to GoPay config YAML file.
         adb_path: Override ADB path.
         device_serial: Override device serial.
+        adb_port: Override ADB port.
         tts_enabled: Override TTS setting.
         log_callback: Callback for log messages.
 
@@ -96,11 +109,20 @@ def create_gopay_runtime(
         app_config.adb_path = adb_path
     if device_serial:
         app_config.device_serial = device_serial
+    if adb_port:
+        app_config.adb_port = adb_port
+    if not device_serial and not adb_port:
+        active_serial, active_port = resolve_active_clone_target(
+            enabled=bool(app_config.bluestacks_use_temp_clone),
+        )
+        if active_serial:
+            app_config.device_serial = active_serial
+            app_config.adb_port = active_port
     if tts_enabled is not None:
         app_config.tts_enabled = tts_enabled
 
     # Create components
-    adb = ADBClient(adb_path=app_config.adb_path, device_serial=app_config.device_serial)
+    adb = ADBClient(adb_path=app_config.adb_path, device_serial=app_config.device_serial, adb_port=app_config.adb_port)
     try:
         ocr = create_ocr_engine(app_config.ocr_backend)
     except OCRUnavailableError as exc:

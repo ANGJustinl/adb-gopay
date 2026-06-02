@@ -17,6 +17,13 @@ from .bluestacks_config import (
     stop_bluestacks_processes,
     update_instance_profile,
 )
+from .bluestacks_mim import (
+    BlueStacksCloneSession,
+    BlueStacksTempCloneManager,
+    load_active_clone_session,
+    resolve_active_clone_target,
+    resolve_bluestacks_source_instance,
+)
 from .bluestacks_player_ui import BlueStacksSettingsController
 from .config import AppConfig, load_config
 from .gopay_flow import FlowState
@@ -34,6 +41,7 @@ def build_parser() -> argparse.ArgumentParser:
     common.add_argument("--config", type=Path, default=None, help="Path to YAML config")
     common.add_argument("--adb-path", default=None, help="Override adb executable path")
     common.add_argument("--device", default=None, help="Override adb device serial")
+    common.add_argument("--adb-port", default=None, help="Override adb server port")
     common.add_argument("--package", default=None, help="Override target package name")
     common.add_argument("--activity", default=None, help="Override target launch activity")
     common.add_argument("--mute", action="store_true", help="Disable speech output")
@@ -225,6 +233,39 @@ def build_parser() -> argparse.ArgumentParser:
         help="Skip adb getprop verification after switching",
     )
 
+    bluestacks_clone_show = subparsers.add_parser(
+        "bluestacks-clone-show",
+        parents=[common],
+        help="Show the active temporary BlueStacks clone session and resolved source instance",
+    )
+    bluestacks_clone_show.add_argument(
+        "--source-instance",
+        default=None,
+        help="Override the BlueStacks source instance name, e.g. Rvc64",
+    )
+
+    bluestacks_clone_create = subparsers.add_parser(
+        "bluestacks-clone-create",
+        parents=[common],
+        help="Create, start, and connect a fresh temporary BlueStacks clone through the official Multi Instance Manager UI",
+    )
+    bluestacks_clone_create.add_argument(
+        "--source-instance",
+        default=None,
+        help="Override the BlueStacks source instance name, e.g. Rvc64",
+    )
+
+    bluestacks_clone_delete = subparsers.add_parser(
+        "bluestacks-clone-delete",
+        parents=[common],
+        help="Stop and delete the currently tracked temporary BlueStacks clone",
+    )
+    bluestacks_clone_delete.add_argument(
+        "--instance",
+        default=None,
+        help="Delete a specific temporary clone instance name, e.g. Rvc64_4_gopay_20260602_134308",
+    )
+
     return parser
 
 
@@ -241,6 +282,7 @@ def main(argv: list[str] | None = None) -> int:
             config_path=args.config,
             adb_path=args.adb_path,
             device_serial=args.device,
+            adb_port=args.adb_port,
             target_package=args.package,
             launch_activity=args.activity,
             tts_enabled=not args.mute,
@@ -258,6 +300,7 @@ def main(argv: list[str] | None = None) -> int:
             config_path=args.config,
             adb_path=args.adb_path,
             device_serial=args.device,
+            adb_port=args.adb_port,
             tts_enabled=not args.mute,
         )
         return 0
@@ -284,6 +327,12 @@ def main(argv: list[str] | None = None) -> int:
         return run_bluestacks_device_set(args)
     if args.command == "bluestacks-preset-switch":
         return run_bluestacks_preset_switch(args)
+    if args.command == "bluestacks-clone-show":
+        return run_bluestacks_clone_show(args)
+    if args.command == "bluestacks-clone-create":
+        return run_bluestacks_clone_create(args)
+    if args.command == "bluestacks-clone-delete":
+        return run_bluestacks_clone_delete(args)
 
     try:
         runtime = create_runtime(
@@ -358,18 +407,27 @@ def _resolve_app_config(args: argparse.Namespace, default_package: str = "com.go
         config.adb_path = args.adb_path
     if args.device:
         config.device_serial = args.device
+    if args.adb_port:
+        config.adb_port = args.adb_port
     if args.package:
         config.target_package = args.package
     elif not config.target_package or config.target_package == "com.example.app":
         config.target_package = default_package
     if args.activity:
         config.launch_activity = args.activity
+    if not args.device and not getattr(args, "adb_port", None):
+        active_serial, active_port = resolve_active_clone_target(
+            enabled=bool(config.bluestacks_use_temp_clone),
+        )
+        if active_serial:
+            config.device_serial = active_serial
+            config.adb_port = active_port
     return config
 
 
 def _create_gopay_adb(args: argparse.Namespace) -> tuple[AppConfig, ADBClient]:
     config = _resolve_app_config(args)
-    return config, ADBClient(adb_path=config.adb_path, device_serial=config.device_serial)
+    return config, ADBClient(adb_path=config.adb_path, device_serial=config.device_serial, adb_port=config.adb_port)
 
 
 def _capture_optional_ocr_lines(config: AppConfig, adb: ADBClient) -> tuple[list[str], str | None]:
@@ -961,6 +1019,128 @@ def run_bluestacks_preset_switch(args: argparse.Namespace) -> int:
     except (AndroidDeviceError, RuntimeError, ValueError) as exc:
         print(f"ADB verification failed: {exc}")
         return 1
+
+
+def _resolve_bluestacks_clone_source(
+    args: argparse.Namespace,
+    *,
+    default_package: str = "com.gojek.gopay",
+) -> tuple[AppConfig, str]:
+    config = _resolve_app_config(args, default_package=default_package)
+    source_instance_name = resolve_bluestacks_source_instance(
+        source_instance_name=getattr(args, "source_instance", None) or config.bluestacks_master_instance,
+        adb_port=config.adb_port,
+        device_serial=config.device_serial,
+        window_title=config.bluestacks_window_title,
+    )
+    return config, source_instance_name
+
+
+def run_bluestacks_clone_show(args: argparse.Namespace) -> int:
+    try:
+        config, source_instance_name = _resolve_bluestacks_clone_source(args)
+    except (RuntimeError, ValueError) as exc:
+        print(f"Failed to resolve BlueStacks source instance: {exc}")
+        return 1
+
+    print(f"ADB path:         {config.adb_path}")
+    print(f"Resolved source:  {source_instance_name}")
+    print(f"ADB port hint:    {config.adb_port or '(empty)'}")
+    print(f"Device serial:    {config.device_serial or '(empty)'}")
+    print(f"MIM title:        {config.bluestacks_mim_window_title or '(auto)'}")
+
+    session = load_active_clone_session()
+    if session is None:
+        print("Active clone:     none")
+        return 0
+
+    print(f"Active clone:     {session.instance_name}")
+    print(f"Display name:     {session.display_name}")
+    print(f"Clone adb_port:   {session.adb_port}")
+    print(f"Clone serial:     {session.device_serial}")
+    print(f"Clone source:     {session.source_instance_name}")
+    return 0
+
+
+def run_bluestacks_clone_create(args: argparse.Namespace) -> int:
+    try:
+        config, source_instance_name = _resolve_bluestacks_clone_source(args)
+    except (RuntimeError, ValueError) as exc:
+        print(f"Failed to resolve BlueStacks source instance: {exc}")
+        return 1
+
+    session = load_active_clone_session()
+    if session is not None:
+        print("Active temporary clone already exists.")
+        print(f"  Instance: {session.instance_name}")
+        print(f"  Serial:   {session.device_serial}")
+        print("Delete it first with: python -m adb_accessibility_assistant bluestacks-clone-delete --config config.gopay.yaml")
+        return 1
+
+    manager = BlueStacksTempCloneManager(
+        adb_path=config.adb_path,
+        source_instance_name=source_instance_name,
+        mim_window_title=config.bluestacks_mim_window_title,
+        log_callback=print,
+    )
+    try:
+        clone_session = manager.provision()
+    except (AndroidDeviceError, RuntimeError, ValueError, OSError) as exc:
+        print(f"Clone creation failed: {exc}")
+        return 1
+
+    print("Clone created and connected.")
+    print(f"  Source instance: {clone_session.source_instance_name}")
+    print(f"  Clone instance:  {clone_session.instance_name}")
+    print(f"  Display name:    {clone_session.display_name}")
+    print(f"  ADB port:        {clone_session.adb_port}")
+    print(f"  Device serial:   {clone_session.device_serial}")
+    return 0
+
+
+def run_bluestacks_clone_delete(args: argparse.Namespace) -> int:
+    try:
+        config = _resolve_app_config(args, default_package="com.gojek.gopay")
+    except (RuntimeError, ValueError) as exc:
+        print(f"Failed to resolve BlueStacks config: {exc}")
+        return 1
+
+    session = load_active_clone_session()
+    if args.instance:
+        try:
+            conf = load_bluestacks_conf(DEFAULT_BLUESTACKS_CONF_PATH)
+            profile = get_instance_profile(conf, args.instance)
+        except (FileNotFoundError, ValueError, OSError) as exc:
+            print(f"Failed to resolve clone instance {args.instance}: {exc}")
+            return 1
+        session = BlueStacksCloneSession(
+            source_instance_name=args.instance.split("_", 1)[0],
+            instance_name=profile.instance_name,
+            display_name=profile.display_name,
+            adb_port=profile.adb_port or "",
+            device_serial=f"127.0.0.1:{profile.adb_port}" if profile.adb_port else "",
+        )
+    elif session is None:
+        print("No active temporary clone session is recorded.")
+        return 0
+
+    manager = BlueStacksTempCloneManager(
+        adb_path=config.adb_path,
+        source_instance_name=session.source_instance_name,
+        mim_window_title=config.bluestacks_mim_window_title,
+        log_callback=print,
+    )
+    manager.current_session = session
+    try:
+        manager.dispose_current()
+    except (AndroidDeviceError, RuntimeError, ValueError, OSError) as exc:
+        print(f"Clone deletion failed: {exc}")
+        return 1
+
+    print("Active temporary clone deleted.")
+    print(f"  Instance: {session.instance_name}")
+    print(f"  Serial:   {session.device_serial}")
+    return 0
 
 
 def run_assist_shell(engine) -> None:

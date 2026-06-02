@@ -4,6 +4,7 @@
 # ADB 配置
 adb_path: adb
 device_serial: ""
+adb_port: "5555"
 
 # 目标应用
 target_package: com.gojek.gopay
@@ -11,11 +12,20 @@ launch_activity: ""
 reset_app_on_start: true
 
 # !!! DANGER / HIGH RISK !!!
-# 开启后，一旦 GoPay 出现验证码冷却弹窗，程序会直接操作你当前可见的 BlueStacks 窗口，
-# 自动打开设置 -> 手机 -> 机型下拉框 -> 切到下一个不同的预设 -> 保存。
-# 这是桌面 UI 自动化，不是改 adb 参数。
-# 运行期间请不要操作电脑，开启自动点击导致的后果请您自负。
-# 如果你有多个 BlueStacks 窗口，务必填写 bluestacks_window_title，避免切错实例。
+# 开启后，GoPay 流程默认不会直接使用主 BlueStacks 实例，而是会：
+# 1. 打开官方 BlueStacks 多开管理器
+# 2. 从主模板实例克隆一个新的临时实例
+# 3. 启动这个临时实例，并把 ADB 自动切到新的端口
+# 4. 流程结束后删除这个临时实例
+# 如果出现 OTP 冷却，也会直接丢弃当前临时实例，再重新克隆一个新的。
+# 这是桌面 UI / 官方多开管理器自动化，会实际操作你的电脑。
+# 运行期间不要手动抢焦点、点鼠标、切窗口。后果自负。
+# 如果你没有显式填写 bluestacks_master_instance，程序会按当前 adb_port / device_serial 反查模板实例。
+bluestacks_use_temp_clone: true
+bluestacks_cleanup_clone_on_exit: true
+bluestacks_master_instance: ""
+bluestacks_mim_window_title: ""
+# 旧的机型切换逻辑保留兼容，但默认不再使用。
 bluestacks_switch_preset_on_cooldown: false
 bluestacks_window_title: ""
 

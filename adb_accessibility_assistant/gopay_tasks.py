@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Any, Callable
 
 from .adb_client import AndroidDeviceError
+from .bluestacks_mim import BlueStacksTempCloneManager, resolve_bluestacks_source_instance
 from .config import load_gopay_config
 from .gopay_flow import FlowState
 from .gopay_pages import actionable_nodes, detect_gopay_page
@@ -28,44 +29,30 @@ def _register_stop_callback(register_stop: StopCallbackRegistrar, stop_fn: Calla
         register_stop(stop_fn)
 
 
-def _maybe_rotate_bluestacks_preset_after_cooldown(
+def _build_clone_manager(
     *,
-    enabled: bool,
-    window_title: str | None,
-    adb=None,
+    config_path: str | Path,
+    adb_path: str | None,
+    device_serial: str | None,
+    app_config,
     log_callback: LogCallback = None,
-) -> None:
-    if not enabled:
-        return
-    log = log_callback or (lambda _message: None)
-    try:
-        from .bluestacks_player_ui import switch_to_different_device_preset
-
-        result = switch_to_different_device_preset(window_title=window_title)
-        log(
-            "BlueStacks preset rotated after cooldown: "
-            f"{result.before_preset} -> {result.after_preset}"
-        )
-        if not result.changed:
-            log("Warning: BlueStacks preset switch completed but the preset name did not change.")
-        if adb is not None:
-            try:
-                model_result = adb.run("shell", "getprop", "ro.product.model")
-                brand_result = adb.run("shell", "getprop", "ro.product.brand")
-                manufacturer_result = adb.run("shell", "getprop", "ro.product.manufacturer")
-                assert isinstance(model_result.stdout, str)
-                assert isinstance(brand_result.stdout, str)
-                assert isinstance(manufacturer_result.stdout, str)
-                log(
-                    "BlueStacks runtime props after preset switch: "
-                    f"model={model_result.stdout.strip()} "
-                    f"brand={brand_result.stdout.strip()} "
-                    f"manufacturer={manufacturer_result.stdout.strip()}"
-                )
-            except Exception as exc:
-                log(f"Warning: failed to verify BlueStacks runtime props after preset switch: {exc}")
-    except Exception as exc:
-        log(f"Warning: failed to rotate BlueStacks preset after cooldown: {exc}")
+) -> BlueStacksTempCloneManager | None:
+    if not app_config.bluestacks_use_temp_clone:
+        return None
+    base_app_config, _, _, _ = load_gopay_config(config_path)
+    source_instance_name = resolve_bluestacks_source_instance(
+        conf_path=None,
+        source_instance_name=app_config.bluestacks_master_instance or base_app_config.bluestacks_master_instance,
+        adb_port=base_app_config.adb_port,
+        device_serial=device_serial or base_app_config.device_serial,
+        window_title=base_app_config.bluestacks_window_title,
+    )
+    return BlueStacksTempCloneManager(
+        adb_path=adb_path or app_config.adb_path,
+        source_instance_name=source_instance_name,
+        mim_window_title=app_config.bluestacks_mim_window_title,
+        log_callback=log_callback,
+    )
 
 
 def prepare_phone_input_task(
@@ -85,7 +72,27 @@ def prepare_phone_input_task(
         tts_enabled=not mute,
         log_callback=log_callback,
     )
-    _register_stop_callback(register_stop, runtime.flow.stop)
+    clone_manager = _build_clone_manager(
+        config_path=config_path,
+        adb_path=adb_path,
+        device_serial=device_serial,
+        app_config=runtime.app_config,
+        log_callback=log_callback,
+    )
+    if clone_manager is not None and device_serial is None:
+        clone_session = clone_manager.provision()
+        runtime = create_gopay_runtime(
+            config_path=config_path,
+            adb_path=adb_path,
+            device_serial=clone_session.device_serial,
+            tts_enabled=not mute,
+            log_callback=log_callback,
+        )
+
+    def stop_current_flow() -> None:
+        runtime.flow.stop()
+
+    _register_stop_callback(register_stop, stop_current_flow)
     if log_callback:
         log_callback("Preparing GoPay phone input page from a clean app state...")
     final_state = runtime.flow.prepare_phone_input(max_steps=max_steps)
@@ -186,7 +193,38 @@ def run_gopay_full_task(
         tts_enabled=not mute,
         log_callback=log_callback,
     )
-    _register_stop_callback(register_stop, runtime.flow.stop)
+    clone_manager = _build_clone_manager(
+        config_path=config_path,
+        adb_path=adb_path,
+        device_serial=device_serial,
+        app_config=runtime.app_config,
+        log_callback=log_callback,
+    )
+
+    def rebuild_runtime(target_serial: str | None = None) -> None:
+        nonlocal runtime
+        runtime = create_gopay_runtime(
+            config_path=config_path,
+            adb_path=adb_path,
+            device_serial=target_serial,
+            tts_enabled=not mute,
+            log_callback=log_callback,
+        )
+        if poll_timeout is not None:
+            runtime.flow.config.poll_timeout = poll_timeout
+        if step_delay is not None:
+            runtime.flow.config.step_delay = step_delay
+        if phone:
+            runtime.flow.ctx.phone_number = phone
+
+    if clone_manager is not None and device_serial is None:
+        clone_session = clone_manager.provision()
+        rebuild_runtime(clone_session.device_serial)
+
+    def stop_current_flow() -> None:
+        runtime.flow.stop()
+
+    _register_stop_callback(register_stop, stop_current_flow)
 
     if poll_timeout is not None:
         runtime.flow.config.poll_timeout = poll_timeout
@@ -256,13 +294,15 @@ def run_gopay_full_task(
 
     def retry_with_new_phone(reason: str, *, error_state: FlowState) -> dict[str, Any] | None:
         nonlocal pending_phone_meta, phone_cycle, attempt
-        if reason.startswith("otp_cooldown:"):
-            _maybe_rotate_bluestacks_preset_after_cooldown(
-                enabled=bool(runtime.app_config.bluestacks_switch_preset_on_cooldown),
-                window_title=runtime.app_config.bluestacks_window_title,
-                adb=runtime.adb,
-                log_callback=log_callback,
-            )
+        if reason.startswith("otp_cooldown:") and clone_manager is not None:
+            try:
+                if log_callback:
+                    log_callback("OTP cooldown detected. Rotating to a fresh BlueStacks clone...")
+                clone_session = clone_manager.rotate()
+                rebuild_runtime(clone_session.device_serial)
+            except Exception as exc:
+                if log_callback:
+                    log_callback(f"Warning: failed to rotate BlueStacks clone after cooldown: {exc}")
         if user_supplied_phone:
             return {
                 "ok": False,
@@ -284,63 +324,141 @@ def run_gopay_full_task(
     pending_phone_meta = snapshot_phone_meta()
     attempt = 1
     phone_cycle = 1
-    while phone_cycle <= max_phone_cycles:
-        if attempt > 1:
-            if log_callback:
-                log_callback(f"Retry attempt {attempt} (phone cycle {phone_cycle}/{max_phone_cycles})")
-            runtime.flow.reset()
-            if pending_phone_meta.get("phone_number"):
-                restore_phone_meta(pending_phone_meta)
-            if user_supplied_phone and runtime.flow.ctx.phone_number:
-                runtime.flow.ctx.phone_number = phone or ""
+    try:
+        while phone_cycle <= max_phone_cycles:
+            if attempt > 1:
                 if log_callback:
-                    log_callback(f"Reusing existing phone number: {runtime.flow.ctx.phone_number}")
-            elif runtime.flow.ctx.phone_number:
-                same_retry_count = int(runtime.flow.ctx.phone_retry_count or 0)
-                remaining_minutes = current_phone_remaining_minutes(snapshot_phone_meta())
-                if same_retry_count > 0 and log_callback:
-                    if remaining_minutes is None:
-                        log_callback(
-                            "Reusing existing phone number: "
-                            f"{runtime.flow.ctx.phone_number} (same-number retry {same_retry_count})"
-                        )
-                    else:
-                        log_callback(
-                            "Reusing existing phone number: "
-                            f"{runtime.flow.ctx.phone_number} "
-                            f"(same-number retry {same_retry_count}, remaining {remaining_minutes:.1f}m)"
-                        )
+                    log_callback(f"Retry attempt {attempt} (phone cycle {phone_cycle}/{max_phone_cycles})")
+                runtime.flow.reset()
+                if pending_phone_meta.get("phone_number"):
+                    restore_phone_meta(pending_phone_meta)
+                if user_supplied_phone and runtime.flow.ctx.phone_number:
+                    runtime.flow.ctx.phone_number = phone or ""
+                    if log_callback:
+                        log_callback(f"Reusing existing phone number: {runtime.flow.ctx.phone_number}")
+                elif runtime.flow.ctx.phone_number:
+                    same_retry_count = int(runtime.flow.ctx.phone_retry_count or 0)
+                    remaining_minutes = current_phone_remaining_minutes(snapshot_phone_meta())
+                    if same_retry_count > 0 and log_callback:
+                        if remaining_minutes is None:
+                            log_callback(
+                                "Reusing existing phone number: "
+                                f"{runtime.flow.ctx.phone_number} (same-number retry {same_retry_count})"
+                            )
+                        else:
+                            log_callback(
+                                "Reusing existing phone number: "
+                                f"{runtime.flow.ctx.phone_number} "
+                                f"(same-number retry {same_retry_count}, remaining {remaining_minutes:.1f}m)"
+                            )
 
-        try:
-            if log_callback:
-                log_callback(f"[Attempt {attempt}] Starting registration flow...")
-            final_state = runtime.flow.run(max_steps=max_steps)
+            try:
+                if log_callback:
+                    log_callback(f"[Attempt {attempt}] Starting registration flow...")
+                final_state = runtime.flow.run(max_steps=max_steps)
 
-            if final_state == FlowState.REGISTRATION_COMPLETE:
+                if final_state == FlowState.REGISTRATION_COMPLETE:
+                    return {
+                        "ok": True,
+                        "status": "success",
+                        "state": final_state.value,
+                        "message": "Registration completed successfully.",
+                        "data": {
+                            "username": runtime.flow.ctx.username,
+                            "phone": runtime.flow.ctx.phone_number,
+                            "credentials_path": runtime.flow.config.credentials_path,
+                            "flow_status": runtime.flow.get_status(),
+                        },
+                    }
+
+                if final_state in (FlowState.ERROR, FlowState.WAITING_OTP):
+                    err = runtime.flow.ctx.error_message or final_state.value
+                    if is_phone_number_rejected_error(err):
+                        reason = err[len(PHONE_NUMBER_REJECTED_ERROR_PREFIX):].strip() or "phone_rejected"
+                        retry_result = retry_with_new_phone(reason, error_state=final_state)
+                        if retry_result and retry_result.get("retry"):
+                            continue
+                        if retry_result:
+                            return retry_result
+                        break
+                    if retry_on_otp_timeout and is_phone_code_timeout_error(err):
+                        phone_meta = snapshot_phone_meta()
+                        invalidate, reason = should_invalidate_phone(phone_meta)
+                        if invalidate:
+                            if user_supplied_phone:
+                                return {
+                                    "ok": False,
+                                    "status": "error",
+                                    "state": final_state.value,
+                                    "message": f"User-supplied phone exceeded retry policy: {reason}",
+                                    "data": {"flow_status": runtime.flow.get_status()},
+                                }
+                            invalidate_current_phone(reason)
+                            pending_phone_meta = {}
+                            phone_cycle += 1
+                            attempt += 1
+                            if phone_cycle > max_phone_cycles:
+                                break
+                            if log_callback:
+                                log_callback("Will retry with a new phone number...")
+                            continue
+
+                        phone_meta["phone_retry_count"] = int(phone_meta.get("phone_retry_count") or 0) + 1
+                        pending_phone_meta = phone_meta
+                        remaining_minutes = current_phone_remaining_minutes(phone_meta)
+                        if log_callback:
+                            if user_supplied_phone:
+                                log_callback("OTP polling timed out. Will retry with the same user-supplied phone number...")
+                            elif remaining_minutes is None:
+                                log_callback(
+                                    "OTP polling timed out. Will retry with the same phone number "
+                                    f"({phone_meta['phone_retry_count']}/{runtime.flow.config.same_number_retry_limit})..."
+                                )
+                            else:
+                                log_callback(
+                                    "OTP polling timed out. Will retry with the same phone number "
+                                    f"({phone_meta['phone_retry_count']}/{runtime.flow.config.same_number_retry_limit}, "
+                                    f"remaining {remaining_minutes:.1f}m)..."
+                                )
+                        attempt += 1
+                        continue
+
+                    return {
+                        "ok": False,
+                        "status": "error",
+                        "state": final_state.value,
+                        "message": err,
+                        "data": {"flow_status": runtime.flow.get_status()},
+                    }
+
+                if final_state == FlowState.MANUAL:
+                    return {
+                        "ok": False,
+                        "status": "manual",
+                        "state": final_state.value,
+                        "message": "Flow requires manual intervention.",
+                        "data": {"flow_status": runtime.flow.get_status()},
+                    }
+
                 return {
-                    "ok": True,
-                    "status": "success",
+                    "ok": False,
+                    "status": "error",
                     "state": final_state.value,
-                    "message": "Registration completed successfully.",
-                    "data": {
-                        "username": runtime.flow.ctx.username,
-                        "phone": runtime.flow.ctx.phone_number,
-                        "credentials_path": runtime.flow.config.credentials_path,
-                        "flow_status": runtime.flow.get_status(),
-                    },
+                    "message": f"Flow ended with state: {final_state.value}",
+                    "data": {"flow_status": runtime.flow.get_status()},
                 }
 
-            if final_state in (FlowState.ERROR, FlowState.WAITING_OTP):
-                err = runtime.flow.ctx.error_message or final_state.value
-                if is_phone_number_rejected_error(err):
-                    reason = err[len(PHONE_NUMBER_REJECTED_ERROR_PREFIX):].strip() or "phone_rejected"
-                    retry_result = retry_with_new_phone(reason, error_state=final_state)
+            except (AndroidDeviceError, NexSMSError, RuntimeError, ValueError, OCRUnavailableError) as exc:
+                error_text = str(exc)
+                if is_phone_number_rejected_error(error_text):
+                    reason = error_text[len(PHONE_NUMBER_REJECTED_ERROR_PREFIX):].strip() or "phone_rejected"
+                    retry_result = retry_with_new_phone(reason, error_state=runtime.flow.state)
                     if retry_result and retry_result.get("retry"):
                         continue
                     if retry_result:
                         return retry_result
                     break
-                if retry_on_otp_timeout and is_phone_code_timeout_error(err):
+                if retry_on_otp_timeout and is_phone_code_timeout_error(error_text):
                     phone_meta = snapshot_phone_meta()
                     invalidate, reason = should_invalidate_phone(phone_meta)
                     if invalidate:
@@ -348,7 +466,7 @@ def run_gopay_full_task(
                             return {
                                 "ok": False,
                                 "status": "error",
-                                "state": final_state.value,
+                                "state": runtime.flow.state.value,
                                 "message": f"User-supplied phone exceeded retry policy: {reason}",
                                 "data": {"flow_status": runtime.flow.get_status()},
                             }
@@ -367,15 +485,15 @@ def run_gopay_full_task(
                     remaining_minutes = current_phone_remaining_minutes(phone_meta)
                     if log_callback:
                         if user_supplied_phone:
-                            log_callback("OTP polling timed out. Will retry with the same user-supplied phone number...")
+                            log_callback("OTP polling timed out. Retrying with the same user-supplied phone number...")
                         elif remaining_minutes is None:
                             log_callback(
-                                "OTP polling timed out. Will retry with the same phone number "
+                                "OTP polling timed out. Retrying with the same phone number "
                                 f"({phone_meta['phone_retry_count']}/{runtime.flow.config.same_number_retry_limit})..."
                             )
                         else:
                             log_callback(
-                                "OTP polling timed out. Will retry with the same phone number "
+                                "OTP polling timed out. Retrying with the same phone number "
                                 f"({phone_meta['phone_retry_count']}/{runtime.flow.config.same_number_retry_limit}, "
                                 f"remaining {remaining_minutes:.1f}m)..."
                             )
@@ -385,95 +503,25 @@ def run_gopay_full_task(
                 return {
                     "ok": False,
                     "status": "error",
-                    "state": final_state.value,
-                    "message": err,
+                    "state": runtime.flow.state.value,
+                    "message": error_text,
                     "data": {"flow_status": runtime.flow.get_status()},
                 }
 
-            if final_state == FlowState.MANUAL:
-                return {
-                    "ok": False,
-                    "status": "manual",
-                    "state": final_state.value,
-                    "message": "Flow requires manual intervention.",
-                    "data": {"flow_status": runtime.flow.get_status()},
-                }
-
-            return {
-                "ok": False,
-                "status": "error",
-                "state": final_state.value,
-                "message": f"Flow ended with state: {final_state.value}",
-                "data": {"flow_status": runtime.flow.get_status()},
-            }
-
-        except (AndroidDeviceError, NexSMSError, RuntimeError, ValueError, OCRUnavailableError) as exc:
-            error_text = str(exc)
-            if is_phone_number_rejected_error(error_text):
-                reason = error_text[len(PHONE_NUMBER_REJECTED_ERROR_PREFIX):].strip() or "phone_rejected"
-                retry_result = retry_with_new_phone(reason, error_state=runtime.flow.state)
-                if retry_result and retry_result.get("retry"):
-                    continue
-                if retry_result:
-                    return retry_result
-                break
-            if retry_on_otp_timeout and is_phone_code_timeout_error(error_text):
-                phone_meta = snapshot_phone_meta()
-                invalidate, reason = should_invalidate_phone(phone_meta)
-                if invalidate:
-                    if user_supplied_phone:
-                        return {
-                            "ok": False,
-                            "status": "error",
-                            "state": runtime.flow.state.value,
-                            "message": f"User-supplied phone exceeded retry policy: {reason}",
-                            "data": {"flow_status": runtime.flow.get_status()},
-                        }
-                    invalidate_current_phone(reason)
-                    pending_phone_meta = {}
-                    phone_cycle += 1
-                    attempt += 1
-                    if phone_cycle > max_phone_cycles:
-                        break
-                    if log_callback:
-                        log_callback("Will retry with a new phone number...")
-                    continue
-
-                phone_meta["phone_retry_count"] = int(phone_meta.get("phone_retry_count") or 0) + 1
-                pending_phone_meta = phone_meta
-                remaining_minutes = current_phone_remaining_minutes(phone_meta)
+        return {
+            "ok": False,
+            "status": "error",
+            "state": runtime.flow.state.value,
+            "message": "All attempts exhausted.",
+            "data": {"flow_status": runtime.flow.get_status()},
+        }
+    finally:
+        if clone_manager is not None and runtime.app_config.bluestacks_cleanup_clone_on_exit:
+            try:
+                clone_manager.dispose_current()
+            except Exception as exc:
                 if log_callback:
-                    if user_supplied_phone:
-                        log_callback("OTP polling timed out. Retrying with the same user-supplied phone number...")
-                    elif remaining_minutes is None:
-                        log_callback(
-                            "OTP polling timed out. Retrying with the same phone number "
-                            f"({phone_meta['phone_retry_count']}/{runtime.flow.config.same_number_retry_limit})..."
-                        )
-                    else:
-                        log_callback(
-                            "OTP polling timed out. Retrying with the same phone number "
-                            f"({phone_meta['phone_retry_count']}/{runtime.flow.config.same_number_retry_limit}, "
-                            f"remaining {remaining_minutes:.1f}m)..."
-                        )
-                attempt += 1
-                continue
-
-            return {
-                "ok": False,
-                "status": "error",
-                "state": runtime.flow.state.value,
-                "message": error_text,
-                "data": {"flow_status": runtime.flow.get_status()},
-            }
-
-    return {
-        "ok": False,
-        "status": "error",
-        "state": runtime.flow.state.value,
-        "message": "All attempts exhausted.",
-        "data": {"flow_status": runtime.flow.get_status()},
-    }
+                    log_callback(f"Warning: failed to clean up BlueStacks clone: {exc}")
 
 
 def resolve_gopay_task_config_path(

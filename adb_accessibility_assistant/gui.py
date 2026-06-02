@@ -14,6 +14,7 @@ class AssistantWindow:
         config_path: Path | None,
         adb_path: str | None,
         device_serial: str | None,
+        adb_port: str | None,
         target_package: str | None,
         launch_activity: str | None,
         tts_enabled: bool,
@@ -29,6 +30,7 @@ class AssistantWindow:
         self._config_path = config_path
         self._adb_path = adb_path
         self._device_serial = device_serial
+        self._adb_port = adb_port
         self._target_package = target_package
         self._launch_activity = launch_activity
         self._tts_enabled = tts_enabled
@@ -42,6 +44,10 @@ class AssistantWindow:
         tk.Label(frame, text="Config").grid(row=0, column=0, sticky="w")
         self.config_var = tk.StringVar(value=str(config_path) if config_path else "")
         tk.Entry(frame, textvariable=self.config_var, width=64).grid(row=0, column=1, columnspan=5, sticky="ew", padx=6)
+
+        tk.Label(frame, text="ADB Port").grid(row=1, column=0, sticky="w")
+        self.adb_port_var = tk.StringVar(value=str(adb_port) if adb_port else "")
+        tk.Entry(frame, textvariable=self.adb_port_var, width=64).grid(row=1, column=1, columnspan=5, sticky="ew", padx=6)
 
         button_frame = tk.Frame(self.root)
         button_frame.pack(fill="x", padx=12)
@@ -76,6 +82,7 @@ class AssistantWindow:
                 config_path=config_path,
                 adb_path=self._adb_path,
                 device_serial=self._device_serial,
+                adb_port=self._adb_port,
                 target_package=self._target_package,
                 launch_activity=self._launch_activity,
                 tts_enabled=self._tts_enabled,
@@ -190,6 +197,7 @@ def launch_gui(
     *,
     config_path: Path | None,
     adb_path: str | None,
+    adb_port: str | None,
     device_serial: str | None,
     target_package: str | None,
     launch_activity: str | None,
@@ -198,6 +206,7 @@ def launch_gui(
     window = AssistantWindow(
         config_path=config_path,
         adb_path=adb_path,
+        adb_port=adb_port,
         device_serial=device_serial,
         target_package=target_package,
         launch_activity=launch_activity,

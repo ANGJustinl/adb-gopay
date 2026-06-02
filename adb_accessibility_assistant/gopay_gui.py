@@ -16,6 +16,7 @@ class GoPayRegistrationWindow:
     def __init__(
         self,
         *,
+        adb_port: str | None = None,
         config_path: Path,
         adb_path: str | None = None,
         device_serial: str | None = None,
@@ -32,6 +33,7 @@ class GoPayRegistrationWindow:
         self._config_path = config_path
         self._adb_path = adb_path
         self._device_serial = device_serial
+        self._adb_port = adb_port
         self._tts_enabled = tts_enabled
         self._queue: queue.Queue[str] = queue.Queue()
         self.runtime = None
@@ -138,6 +140,7 @@ class GoPayRegistrationWindow:
                 config_path=config_path,
                 adb_path=self._adb_path,
                 device_serial=self._device_serial,
+                adb_port=self._adb_port,
                 tts_enabled=self._tts_enabled,
                 log_callback=self._log,
             )
@@ -215,6 +218,7 @@ def launch_gopay_gui(
     *,
     config_path: Path,
     adb_path: str | None = None,
+    adb_port: str | None = None,
     device_serial: str | None = None,
     tts_enabled: bool = False,
 ) -> None:
