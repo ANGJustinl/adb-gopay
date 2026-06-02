@@ -29,7 +29,7 @@ from .config import AppConfig, load_config
 from .gopay_flow import FlowState
 from .gopay_pages import actionable_nodes, detect_gopay_page
 from .gopay_recording import build_page_record, save_page_record
-from .gopay_tasks import prepare_phone_input_task, run_gopay_full_task
+from .gopay_tasks import cleanup_active_gopay_clone, prepare_phone_input_task, run_gopay_full_task
 from .ocr import OCRUnavailableError, available_backends, create_ocr_engine
 from .runtime import create_gopay_runtime, create_runtime
 from .ui_dump import dump_ui_nodes
@@ -809,6 +809,7 @@ def run_gopay_full(args: argparse.Namespace) -> int:
             step_delay=args.step_delay,
             retry_on_otp_timeout=args.retry_on_otp_timeout,
             phone=args.phone,
+            defer_clone_cleanup=True,
             log_callback=print,
         )
     except (OCRUnavailableError, RuntimeError, ValueError) as exc:
@@ -821,9 +822,38 @@ def run_gopay_full(args: argparse.Namespace) -> int:
         print(f"  Username: {data.get('username')}")
         print(f"  Phone:    {data.get('phone')}")
         print(f"{'='*60}")
+        if data.get("clone_cleanup_pending"):
+            print("\nTemporary BlueStacks clone is still running.")
+            try:
+                input("Press Enter to delete the temporary clone and finish...")
+            except (KeyboardInterrupt, EOFError):
+                print("\nSkipped clone cleanup. Delete it later with bluestacks-clone-delete.")
+                return 0
+            try:
+                if cleanup_active_gopay_clone(config_path=args.config, adb_path=args.adb_path, log_callback=print):
+                    print("Temporary BlueStacks clone deleted.")
+                else:
+                    print("No active temporary BlueStacks clone remained to delete.")
+            except Exception as exc:
+                print(f"Warning: failed to delete temporary BlueStacks clone: {exc}")
         return 0
 
     print(f"\nFlow ended: {result.get('state')} ({result.get('message')})")
+    data = result.get("data") or {}
+    if data.get("clone_cleanup_pending"):
+        print("\nTemporary BlueStacks clone is still running.")
+        try:
+            input("Press Enter to delete the temporary clone and finish...")
+        except (KeyboardInterrupt, EOFError):
+            print("\nSkipped clone cleanup. Delete it later with bluestacks-clone-delete.")
+            return 1
+        try:
+            if cleanup_active_gopay_clone(config_path=args.config, adb_path=args.adb_path, log_callback=print):
+                print("Temporary BlueStacks clone deleted.")
+            else:
+                print("No active temporary BlueStacks clone remained to delete.")
+        except Exception as exc:
+            print(f"Warning: failed to delete temporary BlueStacks clone: {exc}")
     return 1
 
 

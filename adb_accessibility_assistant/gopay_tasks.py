@@ -5,7 +5,11 @@ from pathlib import Path
 from typing import Any, Callable
 
 from .adb_client import AndroidDeviceError
-from .bluestacks_mim import BlueStacksTempCloneManager, resolve_bluestacks_source_instance
+from .bluestacks_mim import (
+    BlueStacksTempCloneManager,
+    load_active_clone_session,
+    resolve_bluestacks_source_instance,
+)
 from .config import load_gopay_config
 from .gopay_flow import FlowState
 from .gopay_pages import actionable_nodes, detect_gopay_page
@@ -53,6 +57,27 @@ def _build_clone_manager(
         mim_window_title=app_config.bluestacks_mim_window_title,
         log_callback=log_callback,
     )
+
+
+def cleanup_active_gopay_clone(
+    *,
+    config_path: str | Path,
+    adb_path: str | None = None,
+    log_callback: LogCallback = None,
+) -> bool:
+    session = load_active_clone_session()
+    if session is None:
+        return False
+    app_config, _, _, _ = load_gopay_config(config_path)
+    manager = BlueStacksTempCloneManager(
+        adb_path=adb_path or app_config.adb_path,
+        source_instance_name=session.source_instance_name,
+        mim_window_title=app_config.bluestacks_mim_window_title,
+        log_callback=log_callback,
+    )
+    manager.current_session = session
+    manager.dispose_current()
+    return True
 
 
 def prepare_phone_input_task(
@@ -183,6 +208,7 @@ def run_gopay_full_task(
     step_delay: float | None = None,
     retry_on_otp_timeout: bool = False,
     phone: str | None = None,
+    defer_clone_cleanup: bool = False,
     log_callback: LogCallback = None,
     register_stop: StopCallbackRegistrar = None,
 ) -> dict[str, Any]:
@@ -207,6 +233,7 @@ def run_gopay_full_task(
             config_path=config_path,
             adb_path=adb_path,
             device_serial=target_serial,
+            adb_port=None,
             tts_enabled=not mute,
             log_callback=log_callback,
         )
@@ -220,6 +247,25 @@ def run_gopay_full_task(
     if clone_manager is not None and device_serial is None:
         clone_session = clone_manager.provision()
         rebuild_runtime(clone_session.device_serial)
+
+    def finalize_result(payload: dict[str, Any]) -> dict[str, Any]:
+        data = payload.get("data")
+        if not isinstance(data, dict):
+            data = {}
+            payload["data"] = data
+        clone_cleanup_pending = bool(
+            clone_manager is not None
+            and runtime.app_config.bluestacks_cleanup_clone_on_exit
+            and defer_clone_cleanup
+            and load_active_clone_session() is not None
+        )
+        data["clone_cleanup_pending"] = clone_cleanup_pending
+        if clone_cleanup_pending:
+            session = load_active_clone_session()
+            if session is not None:
+                data["clone_instance"] = session.instance_name
+                data["clone_serial"] = session.device_serial
+        return payload
 
     def stop_current_flow() -> None:
         runtime.flow.stop()
@@ -304,13 +350,13 @@ def run_gopay_full_task(
                 if log_callback:
                     log_callback(f"Warning: failed to rotate BlueStacks clone after cooldown: {exc}")
         if user_supplied_phone:
-            return {
+            return finalize_result({
                 "ok": False,
                 "status": "error",
                 "state": error_state.value,
                 "message": f"User-supplied phone was rejected: {reason}",
                 "data": {"flow_status": runtime.flow.get_status()},
-            }
+            })
         invalidate_current_phone(reason)
         pending_phone_meta = {}
         phone_cycle += 1
@@ -358,7 +404,7 @@ def run_gopay_full_task(
                 final_state = runtime.flow.run(max_steps=max_steps)
 
                 if final_state == FlowState.REGISTRATION_COMPLETE:
-                    return {
+                    return finalize_result({
                         "ok": True,
                         "status": "success",
                         "state": final_state.value,
@@ -369,7 +415,7 @@ def run_gopay_full_task(
                             "credentials_path": runtime.flow.config.credentials_path,
                             "flow_status": runtime.flow.get_status(),
                         },
-                    }
+                    })
 
                 if final_state in (FlowState.ERROR, FlowState.WAITING_OTP):
                     err = runtime.flow.ctx.error_message or final_state.value
@@ -386,13 +432,13 @@ def run_gopay_full_task(
                         invalidate, reason = should_invalidate_phone(phone_meta)
                         if invalidate:
                             if user_supplied_phone:
-                                return {
+                                return finalize_result({
                                     "ok": False,
                                     "status": "error",
                                     "state": final_state.value,
                                     "message": f"User-supplied phone exceeded retry policy: {reason}",
                                     "data": {"flow_status": runtime.flow.get_status()},
-                                }
+                                })
                             invalidate_current_phone(reason)
                             pending_phone_meta = {}
                             phone_cycle += 1
@@ -423,30 +469,30 @@ def run_gopay_full_task(
                         attempt += 1
                         continue
 
-                    return {
+                    return finalize_result({
                         "ok": False,
                         "status": "error",
                         "state": final_state.value,
                         "message": err,
                         "data": {"flow_status": runtime.flow.get_status()},
-                    }
+                    })
 
                 if final_state == FlowState.MANUAL:
-                    return {
+                    return finalize_result({
                         "ok": False,
                         "status": "manual",
                         "state": final_state.value,
                         "message": "Flow requires manual intervention.",
                         "data": {"flow_status": runtime.flow.get_status()},
-                    }
+                    })
 
-                return {
+                return finalize_result({
                     "ok": False,
                     "status": "error",
                     "state": final_state.value,
                     "message": f"Flow ended with state: {final_state.value}",
                     "data": {"flow_status": runtime.flow.get_status()},
-                }
+                })
 
             except (AndroidDeviceError, NexSMSError, RuntimeError, ValueError, OCRUnavailableError) as exc:
                 error_text = str(exc)
@@ -463,13 +509,13 @@ def run_gopay_full_task(
                     invalidate, reason = should_invalidate_phone(phone_meta)
                     if invalidate:
                         if user_supplied_phone:
-                            return {
+                            return finalize_result({
                                 "ok": False,
                                 "status": "error",
                                 "state": runtime.flow.state.value,
                                 "message": f"User-supplied phone exceeded retry policy: {reason}",
                                 "data": {"flow_status": runtime.flow.get_status()},
-                            }
+                            })
                         invalidate_current_phone(reason)
                         pending_phone_meta = {}
                         phone_cycle += 1
@@ -500,23 +546,27 @@ def run_gopay_full_task(
                     attempt += 1
                     continue
 
-                return {
+                return finalize_result({
                     "ok": False,
                     "status": "error",
                     "state": runtime.flow.state.value,
                     "message": error_text,
                     "data": {"flow_status": runtime.flow.get_status()},
-                }
+                })
 
-        return {
+        return finalize_result({
             "ok": False,
             "status": "error",
             "state": runtime.flow.state.value,
             "message": "All attempts exhausted.",
             "data": {"flow_status": runtime.flow.get_status()},
-        }
+        })
     finally:
-        if clone_manager is not None and runtime.app_config.bluestacks_cleanup_clone_on_exit:
+        if (
+            clone_manager is not None
+            and runtime.app_config.bluestacks_cleanup_clone_on_exit
+            and not defer_clone_cleanup
+        ):
             try:
                 clone_manager.dispose_current()
             except Exception as exc:

@@ -6,7 +6,7 @@ import subprocess
 import time
 from dataclasses import dataclass
 
-from PIL import ImageGrab
+from PIL import Image, ImageGrab
 
 from .models import OCRTextBlock
 from .ocr import OCRUnavailableError, create_ocr_engine
@@ -28,6 +28,8 @@ SWP_NOSIZE = 0x0001
 SWP_NOMOVE = 0x0002
 SWP_SHOWWINDOW = 0x0040
 WM_CLOSE = 0x0010
+PW_RENDERFULLCONTENT = 0x00000002
+BI_RGB = 0
 
 SETTINGS_TITLE_CANDIDATES = ("設定", "设置", "Settings")
 PHONE_TAB_CANDIDATES = ("手機", "手机", "Phone")
@@ -57,6 +59,38 @@ class _RECT(ctypes.Structure):
 
 
 EnumWindowsProc = ctypes.WINFUNCTYPE(ctypes.c_bool, ctypes.c_void_p, ctypes.c_void_p)
+
+
+class _BITMAPINFOHEADER(ctypes.Structure):
+    _fields_ = [
+        ("biSize", ctypes.c_uint32),
+        ("biWidth", ctypes.c_long),
+        ("biHeight", ctypes.c_long),
+        ("biPlanes", ctypes.c_ushort),
+        ("biBitCount", ctypes.c_ushort),
+        ("biCompression", ctypes.c_uint32),
+        ("biSizeImage", ctypes.c_uint32),
+        ("biXPelsPerMeter", ctypes.c_long),
+        ("biYPelsPerMeter", ctypes.c_long),
+        ("biClrUsed", ctypes.c_uint32),
+        ("biClrImportant", ctypes.c_uint32),
+    ]
+
+
+class _RGBQUAD(ctypes.Structure):
+    _fields_ = [
+        ("rgbBlue", ctypes.c_ubyte),
+        ("rgbGreen", ctypes.c_ubyte),
+        ("rgbRed", ctypes.c_ubyte),
+        ("rgbReserved", ctypes.c_ubyte),
+    ]
+
+
+class _BITMAPINFO(ctypes.Structure):
+    _fields_ = [
+        ("bmiHeader", _BITMAPINFOHEADER),
+        ("bmiColors", _RGBQUAD * 1),
+    ]
 
 
 @dataclass(slots=True)
@@ -128,6 +162,7 @@ class OCRWindowBlock:
 
 
 user32 = ctypes.windll.user32
+gdi32 = ctypes.windll.gdi32
 
 
 def _list_visible_windows() -> list[WindowRect]:
@@ -245,6 +280,48 @@ def kill_window_process(window: WindowRect) -> None:
         errors="ignore",
     )
     time.sleep(0.8)
+
+
+def grab_window_image(window: WindowRect):
+    width = max(1, int(window.width))
+    height = max(1, int(window.height))
+    hwnd = int(window.hwnd)
+    hwnd_dc = user32.GetWindowDC(hwnd)
+    if not hwnd_dc:
+        raise RuntimeError(f"GetWindowDC failed for window: {window.title}")
+    mem_dc = gdi32.CreateCompatibleDC(hwnd_dc)
+    if not mem_dc:
+        user32.ReleaseDC(hwnd, hwnd_dc)
+        raise RuntimeError(f"CreateCompatibleDC failed for window: {window.title}")
+    bitmap = gdi32.CreateCompatibleBitmap(hwnd_dc, width, height)
+    if not bitmap:
+        gdi32.DeleteDC(mem_dc)
+        user32.ReleaseDC(hwnd, hwnd_dc)
+        raise RuntimeError(f"CreateCompatibleBitmap failed for window: {window.title}")
+    old_bitmap = gdi32.SelectObject(mem_dc, bitmap)
+    try:
+        ok = user32.PrintWindow(hwnd, mem_dc, PW_RENDERFULLCONTENT)
+        if ok != 1:
+            raise RuntimeError(f"PrintWindow failed for window: {window.title}")
+        bitmap_info = _BITMAPINFO()
+        bitmap_info.bmiHeader.biSize = ctypes.sizeof(_BITMAPINFOHEADER)
+        bitmap_info.bmiHeader.biWidth = width
+        bitmap_info.bmiHeader.biHeight = -height
+        bitmap_info.bmiHeader.biPlanes = 1
+        bitmap_info.bmiHeader.biBitCount = 32
+        bitmap_info.bmiHeader.biCompression = BI_RGB
+        buffer = ctypes.create_string_buffer(width * height * 4)
+        rows = gdi32.GetDIBits(mem_dc, bitmap, 0, height, buffer, ctypes.byref(bitmap_info), 0)
+        if rows != height:
+            raise RuntimeError(f"GetDIBits failed for window: {window.title}")
+        image = Image.frombuffer("RGBA", (width, height), buffer, "raw", "BGRA", 0, 1)
+        return image.copy()
+    finally:
+        if old_bitmap:
+            gdi32.SelectObject(mem_dc, old_bitmap)
+        gdi32.DeleteObject(bitmap)
+        gdi32.DeleteDC(mem_dc)
+        user32.ReleaseDC(hwnd, hwnd_dc)
 
 
 def tap_virtual_key(key_code: int) -> None:
@@ -555,11 +632,14 @@ class BlueStacksSettingsController:
 
     def _grab_window_image(self, window: WindowRect):
         focus_window(window)
-        bbox = (window.left, window.top, window.right, window.bottom)
         try:
-            return ImageGrab.grab(bbox=bbox, all_screens=True)
-        except TypeError:
-            return ImageGrab.grab(bbox=bbox)
+            return grab_window_image(window)
+        except Exception:
+            bbox = (window.left, window.top, window.right, window.bottom)
+            try:
+                return ImageGrab.grab(bbox=bbox, all_screens=True)
+            except TypeError:
+                return ImageGrab.grab(bbox=bbox)
 
     def _grab_fullscreen_image(self):
         try:

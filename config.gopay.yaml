@@ -21,7 +21,7 @@ reset_app_on_start: true
 # 这是桌面 UI / 官方多开管理器自动化，会实际操作你的电脑。
 # 运行期间不要手动抢焦点、点鼠标、切窗口。后果自负。
 # 如果你没有显式填写 bluestacks_master_instance，程序会按当前 adb_port / device_serial 反查模板实例。
-bluestacks_use_temp_clone: true
+bluestacks_use_temp_clone: false
 bluestacks_cleanup_clone_on_exit: true
 bluestacks_master_instance: ""
 bluestacks_mim_window_title: ""

@@ -16,6 +16,7 @@ from urllib.parse import urlparse
 import requests
 
 from .gopay_tasks import (
+    cleanup_active_gopay_clone,
     inspect_gopay_page_task,
     prepare_phone_input_task,
     resolve_gopay_task_config_path,
@@ -250,6 +251,7 @@ class TaskManager:
                     event_name = "task.failed"
                 record = fresh
             self._emit_callback(record, event_name)
+            self._cleanup_clone_after_callback(record)
         except Exception as exc:
             with self._lock:
                 fresh = self._tasks.get(record.task_id)
@@ -268,6 +270,7 @@ class TaskManager:
                 fresh.updated_at = fresh.finished_at
                 record = fresh
             self._emit_callback(record, "task.canceled" if record.status == TaskStatus.CANCELED else "task.failed")
+            self._cleanup_clone_after_callback(record)
         finally:
             self._clear_active_control(record.task_id)
 
@@ -299,6 +302,7 @@ class TaskManager:
                 step_delay=float(payload["step_delay"]) if payload.get("step_delay") is not None else None,
                 retry_on_otp_timeout=bool(payload.get("retry_on_otp_timeout", False)),
                 phone=str(payload["phone"]).strip() if payload.get("phone") else None,
+                defer_clone_cleanup=True,
             )
         if record.task_type == "inspect":
             return inspect_gopay_page_task(
@@ -324,6 +328,25 @@ class TaskManager:
             )
         except Exception as exc:
             self._append_log(record.task_id, f"Callback delivery failed: {exc}")
+
+    def _cleanup_clone_after_callback(self, record: TaskRecord) -> None:
+        if record.task_type != "run-gopay":
+            return
+        data = ((record.result or {}).get("data") or {}) if isinstance(record.result, dict) else {}
+        if not isinstance(data, dict) or not data.get("clone_cleanup_pending"):
+            return
+        try:
+            cleaned = cleanup_active_gopay_clone(
+                config_path=record.request_payload["config_path"],
+                adb_path=record.request_payload.get("adb_path"),
+                log_callback=lambda msg: self._append_log(record.task_id, msg),
+            )
+            if cleaned:
+                self._append_log(record.task_id, "Temporary BlueStacks clone deleted after callback.")
+            else:
+                self._append_log(record.task_id, "No active temporary BlueStacks clone remained after callback.")
+        except Exception as exc:
+            self._append_log(record.task_id, f"Post-callback clone cleanup failed: {exc}")
 
 
 def _json_response(handler: BaseHTTPRequestHandler, status: HTTPStatus, payload: dict[str, Any]) -> None:

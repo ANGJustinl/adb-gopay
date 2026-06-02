@@ -31,6 +31,7 @@ from .bluestacks_player_ui import (
     click_screen,
     close_window,
     focus_window,
+    grab_window_image,
     kill_window_process,
 )
 from .ocr import OCRUnavailableError, create_ocr_engine
@@ -52,7 +53,6 @@ CLONE_DIALOG_MARKER_TERMS = (
 )
 CLONE_DIALOG_CONFIRM_TERMS = ("新增", "创建", "建立", "add", "create")
 ROW_ACTION_OFFSET_CLONE = 104
-ROW_ACTION_OFFSET_DELETE = 76
 ROW_ANCHOR_Y_TOLERANCE = 34
 
 
@@ -293,13 +293,6 @@ class BlueStacksMultiInstanceController:
         click_screen(window.right - ROW_ACTION_OFFSET_CLONE, row_y)
         time.sleep(0.6)
 
-    def click_delete_action_for_instance(self, display_name: str, *, timeout_seconds: float = 12.0) -> None:
-        window, row_anchor, _ = self._find_row_anchor(display_name, timeout_seconds=timeout_seconds)
-        row_y = row_anchor.center_screen()[1]
-        focus_window(window)
-        click_screen(window.right - ROW_ACTION_OFFSET_DELETE, row_y)
-        time.sleep(0.6)
-
     def start_instance_via_ui(self, display_name: str, *, timeout_seconds: float = 12.0) -> None:
         window, row_anchor, blocks = self._find_row_anchor(display_name, timeout_seconds=timeout_seconds)
         button_block = self._find_row_button_block(
@@ -363,7 +356,11 @@ class BlueStacksMultiInstanceController:
         conf_before = load_bluestacks_conf(self.conf_path)
         instances_before = set(list_instances(conf_before))
         self.click_clone_action_for_instance(source_display_name)
-        self.confirm_clone_dialog()
+        dialog_warning = ""
+        try:
+            self.confirm_clone_dialog(timeout_seconds=6.0)
+        except RuntimeError as exc:
+            dialog_warning = str(exc)
         deadline = time.time() + timeout_seconds
         while time.time() < deadline:
             conf_after = load_bluestacks_conf(self.conf_path)
@@ -373,7 +370,8 @@ class BlueStacksMultiInstanceController:
                 chosen = sorted(preferred or new_instances)[-1]
                 return get_instance_profile(conf_after, chosen)
             time.sleep(1.5)
-        raise RuntimeError(f"Timed out waiting for BlueStacks clone of {source_instance_name}.")
+        suffix = f" {dialog_warning}" if dialog_warning else ""
+        raise RuntimeError(f"Timed out waiting for BlueStacks clone of {source_instance_name}.{suffix}".strip())
 
     def start_selected_instance(self) -> None:
         self.invoke("--cmd", "startSelectedInstance")
@@ -386,11 +384,14 @@ class BlueStacksMultiInstanceController:
 
     def _capture_blocks(self, window: WindowRect) -> list[OCRWindowBlock]:
         focus_window(window)
-        bbox = (window.left, window.top, window.right, window.bottom)
         try:
-            image = ImageGrab.grab(bbox=bbox, all_screens=True)
-        except TypeError:
-            image = ImageGrab.grab(bbox=bbox)
+            image = grab_window_image(window)
+        except Exception:
+            bbox = (window.left, window.top, window.right, window.bottom)
+            try:
+                image = ImageGrab.grab(bbox=bbox, all_screens=True)
+            except TypeError:
+                image = ImageGrab.grab(bbox=bbox)
         buffer = io.BytesIO()
         image.save(buffer, format="PNG")
         blocks = self._ocr.recognize(buffer.getvalue())
@@ -529,10 +530,11 @@ class BlueStacksTempCloneManager:
             while time.time() < deadline and _is_port_open(adb_port):
                 time.sleep(0.5)
         try:
-            self.controller.click_delete_action_for_instance(session.display_name, timeout_seconds=6.0)
-            time.sleep(4.0)
+            self.controller.select_instance(session.display_name, timeout_seconds=6.0)
+            self.controller.delete_selected_instance()
+            time.sleep(2.0)
         except Exception as exc:
-            self.log(f"Warning: failed to delete clone via Multi Instance Manager: {exc}")
+            self.log(f"Warning: failed to delete clone via Multi Instance Manager command: {exc}")
         self._manual_cleanup(session.instance_name)
         self.current_session = None
         self._clear_active_session()

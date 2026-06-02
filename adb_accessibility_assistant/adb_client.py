@@ -47,6 +47,10 @@ class ADBClient:
         except subprocess.CalledProcessError as exc:
             error_text = exc.stderr if text else exc.stderr.decode("utf-8", errors="ignore")
             raise AndroidDeviceError(error_text.strip() or f"adb command failed: {' '.join(self._command(*args))}") from exc
+        except subprocess.TimeoutExpired as exc:
+            raise AndroidDeviceError(
+                f"adb command timed out after {timeout:.1f}s: {' '.join(self._command(*args))}"
+            ) from exc
 
     def assert_available(self) -> None:
         self.run("version")

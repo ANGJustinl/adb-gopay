@@ -41,6 +41,18 @@ class GoPayRuntime:
     flow: GoPayRegistrationFlow
 
 
+def _normalize_runtime_adb_target(config: AppConfig, *, device_serial_overridden: bool, adb_port_overridden: bool) -> None:
+    if config.device_serial:
+        if not adb_port_overridden:
+            config.adb_port = None
+        return
+    if config.adb_port and not device_serial_overridden:
+        port_text = str(config.adb_port).strip()
+        if port_text:
+            config.device_serial = f"127.0.0.1:{port_text}"
+            config.adb_port = None
+
+
 def create_runtime(
     config_path: str | Path | None = None,
     *,
@@ -66,6 +78,11 @@ def create_runtime(
         if active_serial:
             config.device_serial = active_serial
             config.adb_port = active_port
+    _normalize_runtime_adb_target(
+        config,
+        device_serial_overridden=device_serial is not None,
+        adb_port_overridden=adb_port is not None,
+    )
     if target_package:
         config.target_package = target_package
     if launch_activity:
@@ -118,6 +135,11 @@ def create_gopay_runtime(
         if active_serial:
             app_config.device_serial = active_serial
             app_config.adb_port = active_port
+    _normalize_runtime_adb_target(
+        app_config,
+        device_serial_overridden=device_serial is not None,
+        adb_port_overridden=adb_port is not None,
+    )
     if tts_enabled is not None:
         app_config.tts_enabled = tts_enabled
 
