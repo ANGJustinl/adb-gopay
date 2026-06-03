@@ -90,26 +90,34 @@ def prepare_phone_input_task(
     log_callback: LogCallback = None,
     register_stop: StopCallbackRegistrar = None,
 ) -> dict[str, Any]:
-    runtime = create_gopay_runtime(
-        config_path=config_path,
-        adb_path=adb_path,
-        device_serial=device_serial,
-        tts_enabled=not mute,
-        log_callback=log_callback,
-    )
+    runtime = None
+    base_app_config, _, _, _ = load_gopay_config(config_path)
+    if adb_path:
+        base_app_config.adb_path = adb_path
+    if device_serial:
+        base_app_config.device_serial = device_serial
     clone_manager = _build_clone_manager(
         config_path=config_path,
         adb_path=adb_path,
         device_serial=device_serial,
-        app_config=runtime.app_config,
+        app_config=base_app_config,
         log_callback=log_callback,
     )
+
     if clone_manager is not None and device_serial is None:
         clone_session = clone_manager.provision()
         runtime = create_gopay_runtime(
             config_path=config_path,
             adb_path=adb_path,
             device_serial=clone_session.device_serial,
+            tts_enabled=not mute,
+            log_callback=log_callback,
+        )
+    else:
+        runtime = create_gopay_runtime(
+            config_path=config_path,
+            adb_path=adb_path,
+            device_serial=device_serial,
             tts_enabled=not mute,
             log_callback=log_callback,
         )
@@ -212,18 +220,16 @@ def run_gopay_full_task(
     log_callback: LogCallback = None,
     register_stop: StopCallbackRegistrar = None,
 ) -> dict[str, Any]:
-    runtime = create_gopay_runtime(
-        config_path=config_path,
-        adb_path=adb_path,
-        device_serial=device_serial,
-        tts_enabled=not mute,
-        log_callback=log_callback,
-    )
+    base_app_config, _, _, _ = load_gopay_config(config_path)
+    if adb_path:
+        base_app_config.adb_path = adb_path
+    if device_serial:
+        base_app_config.device_serial = device_serial
     clone_manager = _build_clone_manager(
         config_path=config_path,
         adb_path=adb_path,
         device_serial=device_serial,
-        app_config=runtime.app_config,
+        app_config=base_app_config,
         log_callback=log_callback,
     )
 
@@ -247,6 +253,20 @@ def run_gopay_full_task(
     if clone_manager is not None and device_serial is None:
         clone_session = clone_manager.provision()
         rebuild_runtime(clone_session.device_serial)
+    else:
+        runtime = create_gopay_runtime(
+            config_path=config_path,
+            adb_path=adb_path,
+            device_serial=device_serial,
+            tts_enabled=not mute,
+            log_callback=log_callback,
+        )
+        if poll_timeout is not None:
+            runtime.flow.config.poll_timeout = poll_timeout
+        if step_delay is not None:
+            runtime.flow.config.step_delay = step_delay
+        if phone:
+            runtime.flow.ctx.phone_number = phone
 
     def finalize_result(payload: dict[str, Any]) -> dict[str, Any]:
         data = payload.get("data")

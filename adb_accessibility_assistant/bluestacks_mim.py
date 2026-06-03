@@ -436,6 +436,31 @@ class BlueStacksTempCloneManager:
         if self.current_session and self.current_session.source_instance_name != self.source_instance_name:
             self.current_session = None
 
+    def _assert_safe_clone_session(self, session: BlueStacksCloneSession) -> None:
+        source_conf = load_bluestacks_conf(self.conf_path)
+        source_profile = get_instance_profile(source_conf, self.source_instance_name)
+        if session.instance_name == self.source_instance_name:
+            raise RuntimeError(
+                f"Refusing to delete the BlueStacks source instance: {session.instance_name}"
+            )
+        if source_profile.adb_port and session.adb_port == source_profile.adb_port:
+            raise RuntimeError(
+                "Refusing to delete a BlueStacks instance that shares the source adb_port: "
+                f"{session.instance_name} -> {session.adb_port}"
+            )
+        if source_profile.display_name and session.display_name == source_profile.display_name:
+            raise RuntimeError(
+                "Refusing to delete a BlueStacks instance that shares the source display name: "
+                f"{session.display_name}"
+            )
+        if not (
+            session.instance_name.startswith(f"{self.source_instance_name}_")
+            or "_gopay_" in session.instance_name
+        ):
+            raise RuntimeError(
+                f"Refusing to delete a BlueStacks instance that does not look like a temp clone: {session.instance_name}"
+            )
+
     def provision(self) -> BlueStacksCloneSession:
         conf = load_bluestacks_conf(self.conf_path)
         source_profile = get_instance_profile(conf, self.source_instance_name)
@@ -499,6 +524,7 @@ class BlueStacksTempCloneManager:
         if session is None:
             self._clear_active_session()
             return
+        self._assert_safe_clone_session(session)
         self.log(f"Cleaning up BlueStacks clone: {session.instance_name}")
         adb_port = int(session.adb_port) if str(session.adb_port or "").isdigit() else None
         try:

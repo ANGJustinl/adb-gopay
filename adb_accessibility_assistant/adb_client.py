@@ -55,7 +55,42 @@ class ADBClient:
     def assert_available(self) -> None:
         self.run("version")
 
+    def _is_tcp_serial(self) -> bool:
+        serial = str(self.device_serial or "").strip()
+        return bool(serial and ":" in serial)
+
+    def connect(self, timeout: float = 30.0) -> None:
+        serial = str(self.device_serial or "").strip()
+        if not serial:
+            raise AndroidDeviceError("adb connect requires device_serial")
+        command = [self.adb_path]
+        if self.adb_port:
+            command.extend(["-P", self.adb_port])
+        command.extend(["connect", serial])
+        try:
+            result = subprocess.run(
+                command,
+                capture_output=True,
+                text=True,
+                check=False,
+                timeout=timeout,
+                encoding="utf-8",
+                errors="replace",
+            )
+        except FileNotFoundError as exc:
+            raise AndroidDeviceError(f"adb executable not found: {self.adb_path}") from exc
+        except subprocess.TimeoutExpired as exc:
+            raise AndroidDeviceError(
+                f"adb command timed out after {timeout:.1f}s: {' '.join(command)}"
+            ) from exc
+
+        output = " ".join(part.strip() for part in (result.stdout, result.stderr) if part and part.strip()).strip()
+        if result.returncode != 0 and "already connected" not in output.casefold():
+            raise AndroidDeviceError(output or f"adb connect failed: {' '.join(command)}")
+
     def wait_for_device(self, timeout: float = 30.0) -> None:
+        if self._is_tcp_serial():
+            self.connect(timeout=min(timeout, 15.0))
         self.run("wait-for-device", timeout=timeout)
 
     def list_devices(self) -> list[str]:
