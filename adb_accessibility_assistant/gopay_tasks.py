@@ -15,8 +15,10 @@ from .gopay_flow import FlowState
 from .gopay_pages import actionable_nodes, detect_gopay_page
 from .gopay_recording import build_page_record, save_page_record
 from .nexsms_client import (
+    DEVICE_COOLDOWN_ERROR_PREFIX,
     PHONE_NUMBER_REJECTED_ERROR_PREFIX,
     NexSMSError,
+    is_device_cooldown_error,
     is_phone_code_timeout_error,
     is_phone_number_rejected_error,
 )
@@ -358,17 +360,86 @@ def run_gopay_full_task(
             if log_callback:
                 log_callback(f"Warning: failed to invalidate phone number {phone_number}: {exc}")
 
+    def handle_device_cooldown(reason: str, *, error_state: FlowState) -> dict[str, Any] | None:
+        nonlocal pending_phone_meta, phone_cycle, attempt
+        phone_meta = snapshot_phone_meta()
+        phone_number = str(phone_meta.get("phone_number") or "")
+        pending_phone_meta = phone_meta if phone_number else {}
+
+        if clone_manager is None:
+            return finalize_result({
+                "ok": False,
+                "status": "error",
+                "state": error_state.value,
+                "message": (
+                    "GoPay device cooldown detected. The phone number was not marked invalid. "
+                    "Non-clone mode cannot recover automatically; clone or replace the BlueStacks device, "
+                    "or enable bluestacks_use_temp_clone: true, then retry."
+                ),
+                "data": {
+                    "flow_status": runtime.flow.get_status(),
+                    "device_cooldown": True,
+                    "phone": phone_number,
+                    "reason": reason,
+                },
+            })
+
+        if phone_cycle >= max_phone_cycles:
+            return finalize_result({
+                "ok": False,
+                "status": "error",
+                "state": error_state.value,
+                "message": (
+                    "GoPay device cooldown repeated. The phone number was not marked invalid; "
+                    "stop and use a fresh BlueStacks clone/device before retrying."
+                ),
+                "data": {
+                    "flow_status": runtime.flow.get_status(),
+                    "device_cooldown": True,
+                    "phone": phone_number,
+                    "reason": reason,
+                },
+            })
+
+        try:
+            if log_callback:
+                log_callback(
+                    "OTP cooldown detected. Rotating to a fresh BlueStacks clone; "
+                    "keeping the same phone number."
+                )
+            clone_session = clone_manager.rotate()
+            rebuild_runtime(clone_session.device_serial)
+        except Exception as exc:
+            return finalize_result({
+                "ok": False,
+                "status": "error",
+                "state": error_state.value,
+                "message": (
+                    "GoPay device cooldown detected, but clone rotation failed. "
+                    "The phone number was not marked invalid; manually clone/replace the device and retry. "
+                    f"Rotation error: {exc}"
+                ),
+                "data": {
+                    "flow_status": runtime.flow.get_status(),
+                    "device_cooldown": True,
+                    "phone": phone_number,
+                    "reason": reason,
+                },
+            })
+
+        phone_cycle += 1
+        attempt += 1
+        if log_callback:
+            if phone_number:
+                log_callback(f"Will retry with the same phone number after clone rotation: {phone_number}")
+            else:
+                log_callback("Will retry after clone rotation.")
+        return {"retry": True}
+
     def retry_with_new_phone(reason: str, *, error_state: FlowState) -> dict[str, Any] | None:
         nonlocal pending_phone_meta, phone_cycle, attempt
-        if reason.startswith("otp_cooldown:") and clone_manager is not None:
-            try:
-                if log_callback:
-                    log_callback("OTP cooldown detected. Rotating to a fresh BlueStacks clone...")
-                clone_session = clone_manager.rotate()
-                rebuild_runtime(clone_session.device_serial)
-            except Exception as exc:
-                if log_callback:
-                    log_callback(f"Warning: failed to rotate BlueStacks clone after cooldown: {exc}")
+        if reason.startswith("otp_cooldown:"):
+            return handle_device_cooldown(reason, error_state=error_state)
         if user_supplied_phone:
             return finalize_result({
                 "ok": False,
@@ -439,6 +510,14 @@ def run_gopay_full_task(
 
                 if final_state in (FlowState.ERROR, FlowState.WAITING_OTP):
                     err = runtime.flow.ctx.error_message or final_state.value
+                    if is_device_cooldown_error(err):
+                        reason = err[len(DEVICE_COOLDOWN_ERROR_PREFIX):].strip() or "device_cooldown"
+                        cooldown_result = handle_device_cooldown(reason, error_state=final_state)
+                        if cooldown_result and cooldown_result.get("retry"):
+                            continue
+                        if cooldown_result:
+                            return cooldown_result
+                        break
                     if is_phone_number_rejected_error(err):
                         reason = err[len(PHONE_NUMBER_REJECTED_ERROR_PREFIX):].strip() or "phone_rejected"
                         retry_result = retry_with_new_phone(reason, error_state=final_state)
@@ -516,6 +595,14 @@ def run_gopay_full_task(
 
             except (AndroidDeviceError, NexSMSError, RuntimeError, ValueError, OCRUnavailableError) as exc:
                 error_text = str(exc)
+                if is_device_cooldown_error(error_text):
+                    reason = error_text[len(DEVICE_COOLDOWN_ERROR_PREFIX):].strip() or "device_cooldown"
+                    cooldown_result = handle_device_cooldown(reason, error_state=runtime.flow.state)
+                    if cooldown_result and cooldown_result.get("retry"):
+                        continue
+                    if cooldown_result:
+                        return cooldown_result
+                    break
                 if is_phone_number_rejected_error(error_text):
                     reason = error_text[len(PHONE_NUMBER_REJECTED_ERROR_PREFIX):].strip() or "phone_rejected"
                     retry_result = retry_with_new_phone(reason, error_state=runtime.flow.state)

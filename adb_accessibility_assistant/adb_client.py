@@ -88,7 +88,33 @@ class ADBClient:
         if result.returncode != 0 and "already connected" not in output.casefold():
             raise AndroidDeviceError(output or f"adb connect failed: {' '.join(command)}")
 
-    def wait_for_device(self, timeout: float = 30.0) -> None:
+    def disconnect_all(self, timeout: float = 10.0) -> None:
+        command = [self.adb_path]
+        if self.adb_port:
+            command.extend(["-P", self.adb_port])
+        command.append("disconnect")
+        try:
+            subprocess.run(
+                command,
+                capture_output=True,
+                text=True,
+                check=True,
+                timeout=timeout,
+                encoding="utf-8",
+                errors="replace",
+            )
+        except FileNotFoundError as exc:
+            raise AndroidDeviceError(f"adb executable not found: {self.adb_path}") from exc
+        except subprocess.CalledProcessError as exc:
+            raise AndroidDeviceError((exc.stderr or exc.stdout or "").strip() or f"adb disconnect failed: {' '.join(command)}") from exc
+        except subprocess.TimeoutExpired as exc:
+            raise AndroidDeviceError(
+                f"adb command timed out after {timeout:.1f}s: {' '.join(command)}"
+            ) from exc
+
+    def wait_for_device(self, timeout: float = 30.0, *, reset_tcp_connections: bool = False) -> None:
+        if reset_tcp_connections and self._is_tcp_serial():
+            self.disconnect_all(timeout=min(timeout, 10.0))
         if self._is_tcp_serial():
             self.connect(timeout=min(timeout, 15.0))
         self.run("wait-for-device", timeout=timeout)

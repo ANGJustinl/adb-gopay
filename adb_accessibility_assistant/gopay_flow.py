@@ -6,6 +6,7 @@ import io
 import time
 from dataclasses import dataclass, field
 from enum import Enum
+from pathlib import Path
 from typing import Any, Callable
 
 from .adb_client import ADBClient
@@ -15,6 +16,7 @@ from .credential_generator import generate_pin, generate_username, save_credenti
 from .gopay_pages import detect_gopay_page
 from .models import ScreenSnapshot
 from .nexsms_client import (
+    DEVICE_COOLDOWN_ERROR_PREFIX,
     PHONE_NUMBER_REJECTED_ERROR_PREFIX,
     NexSMSClient,
     NexSMSError,
@@ -57,6 +59,7 @@ class FlowContext:
     """Context data for the registration flow."""
     phone_number: str = ""
     phone_submitted: bool = False
+    phone_submitted_at_epoch: float = 0.0
     phone_acquired_at_epoch: float = 0.0
     phone_expiry_epoch: float = 0.0
     phone_retry_count: int = 0
@@ -67,6 +70,8 @@ class FlowContext:
     otp_phase: str = "initial"
     username: str = ""
     pin: str = ""
+    pin_input_digits_entered: bool = False
+    pin_confirm_digits_entered: bool = False
     current_state: FlowState = FlowState.INIT
     pin_flow_source: str = ""
     error_message: str = ""
@@ -185,6 +190,14 @@ UI_PAGE_STATE_MAP: dict[str, FlowState] = {
     "pin_confirm": FlowState.WAITING_PIN_CONFIRM,
 }
 
+PHONE_SUBMIT_RESULT_WAIT_SECONDS = 10.0
+PHONE_ACCEPTED_STATES = {
+    FlowState.WAITING_SIGNUP_TERMS,
+    FlowState.WAITING_VERIFICATION_METHOD,
+    FlowState.WAITING_OTP_METHOD_SWITCH,
+    FlowState.WAITING_OTP,
+}
+
 
 def detect_page_state(snapshot: ScreenSnapshot) -> FlowState | None:
     """Detect current page state from OCR text.
@@ -280,6 +293,7 @@ class GoPayRegistrationFlow:
         self._stopped = False
         self._last_ui_nodes: list[UINode] = []
         self._last_page_id: str | None = None
+        self._adb_keyboard_ready: bool | None = None
 
     @property
     def nexsms(self) -> NexSMSClient:
@@ -342,7 +356,9 @@ class GoPayRegistrationFlow:
 
     def _start_clean_session(self) -> None:
         """Clear app data and relaunch GoPay from a clean state."""
-        self.adb.wait_for_device()
+        if self.adb.device_serial:
+            self.log(f"Resetting ADB TCP connections and connecting device: {self.adb.device_serial}")
+        self.adb.wait_for_device(reset_tcp_connections=True)
         self.log(f"Clearing app data: {self.config.target_package}")
         self.adb.clear_app_data(self.config.target_package)
         time.sleep(1.0)
@@ -351,6 +367,7 @@ class GoPayRegistrationFlow:
         self._last_page_id = None
         self._last_ui_nodes = []
         self.ctx.phone_submitted = False
+        self.ctx.phone_submitted_at_epoch = 0.0
         self.ctx.pin_flow_source = ""
         self.ctx.otp_code = ""
         self.ctx.otp_resend_count = 0
@@ -385,6 +402,7 @@ class GoPayRegistrationFlow:
                 nodes=nodes,
             ):
                 return self.ctx.current_state
+            self._mark_phone_accepted_if_detected(detected)
             if page_match:
                 self._last_page_id = page_id
                 if detected and detected != self.ctx.current_state:
@@ -396,6 +414,7 @@ class GoPayRegistrationFlow:
 
         snapshot = self._capture_snapshot()
         detected = detect_page_state(snapshot)
+        self._mark_phone_accepted_if_detected(detected)
         if detected and detected != self.ctx.current_state:
             self.log(f"Detected page via OCR: {detected.value}")
             self._set_state(detected)
@@ -424,6 +443,41 @@ class GoPayRegistrationFlow:
         self.log(f"Phone rejected by GoPay: {normalized_reason} ({self.ctx.phone_number})")
         self.ctx.current_state = FlowState.ERROR
 
+    def _set_device_cooldown_error(self, reason: str) -> None:
+        normalized_reason = str(reason or "device_cooldown").strip() or "device_cooldown"
+        message = (
+            f"{DEVICE_COOLDOWN_ERROR_PREFIX}{normalized_reason}"
+            f" phone={self.ctx.phone_number}"
+        )
+        self.ctx.error_message = message
+        self.log(f"GoPay device cooldown detected: {normalized_reason} ({self.ctx.phone_number})")
+        self.ctx.current_state = FlowState.ERROR
+
+    def _phone_submit_elapsed_seconds(self) -> float:
+        if self.ctx.phone_submitted_at_epoch <= 0:
+            return 0.0
+        return max(0.0, time.time() - self.ctx.phone_submitted_at_epoch)
+
+    def _phone_submit_wait_remaining_seconds(self) -> float:
+        return max(0.0, PHONE_SUBMIT_RESULT_WAIT_SECONDS - self._phone_submit_elapsed_seconds())
+
+    def _is_waiting_for_phone_submit_result(self) -> bool:
+        return (
+            self.ctx.phone_submitted
+            and bool(self.ctx.phone_number)
+            and self._phone_submit_wait_remaining_seconds() > 0
+        )
+
+    def _mark_phone_accepted_if_detected(self, detected_state: FlowState | None) -> None:
+        if (
+            detected_state in PHONE_ACCEPTED_STATES
+            and self.ctx.phone_submitted
+            and self.ctx.phone_number
+        ):
+            self.ctx.phone_submitted = False
+            self.ctx.phone_submitted_at_epoch = 0.0
+            self.log(f"Phone accepted by GoPay: reached {detected_state.value} ({self.ctx.phone_number})")
+
     def _dismiss_modal_ack(self, nodes: list[UINode]) -> None:
         ack_node = find_first_node(
             nodes,
@@ -444,15 +498,6 @@ class GoPayRegistrationFlow:
         nodes: list[UINode],
     ) -> bool:
         """Detect existing-account / rejected-number branches after phone submission."""
-        if not self.ctx.phone_submitted or not self.ctx.phone_number:
-            return False
-        if self.ctx.otp_phase != "initial" or self.ctx.otp_code or self.ctx.username or self.ctx.pin:
-            return False
-
-        if page_id in {"pin_input", "pin_confirm"}:
-            self._set_phone_rejected_error("existing_account_requires_pin")
-            return True
-
         haystack = self._ui_haystack(nodes)
         if haystack:
             cooldown_terms = [
@@ -463,9 +508,19 @@ class GoPayRegistrationFlow:
             for term in cooldown_terms:
                 if self._normalize_ui_term(term) in haystack:
                     self._dismiss_modal_ack(nodes)
-                    self._set_phone_rejected_error(f"otp_cooldown:{term}")
+                    self._set_device_cooldown_error(f"otp_cooldown:{term}")
                     return True
 
+        if not self.ctx.phone_submitted or not self.ctx.phone_number:
+            return False
+        if self.ctx.otp_phase != "initial" or self.ctx.otp_code or self.ctx.username or self.ctx.pin:
+            return False
+
+        if page_id in {"pin_input", "pin_confirm"}:
+            self._set_phone_rejected_error("existing_account_requires_pin")
+            return True
+
+        if haystack:
             relogin_terms = [
                 "masukkin pin kamu",
                 "ketik gopay pin kamu untuk masuk",
@@ -499,6 +554,13 @@ class GoPayRegistrationFlow:
                     return True
 
         if detected_state == FlowState.WAITING_PHONE_INPUT:
+            if self._is_waiting_for_phone_submit_result():
+                remaining = self._phone_submit_wait_remaining_seconds()
+                self.log(
+                    "Phone input still visible after submit; "
+                    f"waiting before rejecting ({remaining:.1f}s left)."
+                )
+                return True
             self._set_phone_rejected_error("returned_to_phone_input_after_submit")
             return True
         return False
@@ -538,6 +600,7 @@ class GoPayRegistrationFlow:
             f"{phone} (country={order_result['country_name']}, price={order_result['price']})"
         )
         self.ctx.phone_submitted = False
+        self.ctx.phone_submitted_at_epoch = 0.0
         if self.ctx.phone_expiry_epoch > 0:
             remaining_minutes = max(0.0, (self.ctx.phone_expiry_epoch - time.time()) / 60.0)
             expiry_source = str(order_result.get("expiry_source") or "unknown")
@@ -569,8 +632,60 @@ class GoPayRegistrationFlow:
             return None
         return self.ctx.phone_expiry_epoch - time.time()
 
-    def _input_text(self, text: str) -> None:
-        """Input text via ADB."""
+    def _ensure_adb_keyboard(self) -> bool:
+        if self._adb_keyboard_ready is not None:
+            return self._adb_keyboard_ready
+
+        package_name = "com.android.adbkeyboard"
+        ime_id = f"{package_name}/.AdbIME"
+        try:
+            result = self.adb.run("shell", "pm", "list", "packages", package_name, check=False)
+            output = result.stdout if isinstance(result.stdout, str) else ""
+            if package_name not in output:
+                apk_path = Path(__file__).resolve().parent.parent / "ADBKeyboard.apk"
+                if not apk_path.exists():
+                    self._adb_keyboard_ready = False
+                    return False
+                self.log(f"Installing ADBKeyboard for stable text input: {apk_path}")
+                self.adb.run("install", "-r", str(apk_path), timeout=90.0)
+                time.sleep(0.8)
+
+            enable_result = self.adb.run("shell", "ime", "enable", ime_id, check=False)
+            enable_output = " ".join(
+                part.strip()
+                for part in (enable_result.stdout, enable_result.stderr)
+                if isinstance(part, str) and part.strip()
+            )
+            if "unknown input method" in enable_output.casefold():
+                raise RuntimeError(enable_output)
+
+            set_result = self.adb.run("shell", "ime", "set", ime_id, check=False)
+            set_output = " ".join(
+                part.strip()
+                for part in (set_result.stdout, set_result.stderr)
+                if isinstance(part, str) and part.strip()
+            )
+            if "unknown input method" in set_output.casefold():
+                raise RuntimeError(set_output)
+
+            current_result = self.adb.run("shell", "settings", "get", "secure", "default_input_method", check=False)
+            current_ime = current_result.stdout.strip() if isinstance(current_result.stdout, str) else ""
+            if current_ime != ime_id:
+                raise RuntimeError(f"ADBKeyboard IME not selected: {current_ime or '(empty)'}")
+
+            self._adb_keyboard_ready = True
+            return True
+        except Exception as exc:
+            self.log(f"ADBKeyboard unavailable, falling back to adb input text: {exc}")
+            self._adb_keyboard_ready = False
+            return False
+
+    def _input_text(self, text: str, *, prefer_adb_keyboard: bool = False) -> None:
+        """Input text via ADB, using ADBKeyboard when available for custom input fields."""
+        if prefer_adb_keyboard and self._ensure_adb_keyboard():
+            self.adb.run("shell", "am", "broadcast", "-a", "ADB_INPUT_TEXT", "--es", "msg", text)
+            time.sleep(0.5)
+            return
         self.adb.input_text(text)
         time.sleep(0.5)
 
@@ -583,7 +698,7 @@ class GoPayRegistrationFlow:
             digits = digits[1:]
         return digits
 
-    def _tap_confirm(self, preferred_terms: list[str] | None = None) -> None:
+    def _tap_confirm(self, preferred_terms: list[str] | None = None, *, allow_enter_fallback: bool = True) -> bool:
         """Tap a preferred confirm button, then fall back to common confirm buttons."""
         button_terms = list(preferred_terms or [])
         for term in ["Lanjut", "Buat akun", "Next", "Submit", "Konfirmasi", "Confirm", "OK", "Oke"]:
@@ -598,7 +713,7 @@ class GoPayRegistrationFlow:
                     x, y = tap_node(self.adb, node)
                     self.log(f"Tapped via UI dump: {button_text} at ({x}, {y})")
                     time.sleep(self.config.step_delay)
-                    return
+                    return True
         except Exception as exc:
             self.log(f"UI dump confirm fallback to OCR: {exc}")
 
@@ -607,10 +722,40 @@ class GoPayRegistrationFlow:
             if tap_text(snapshot, self.adb, button_text):
                 self.log(f"Tapped via OCR: {button_text}")
                 time.sleep(self.config.step_delay)
-                return
+                return True
+
+        if not allow_enter_fallback:
+            return False
+
         # If no button found, try pressing Enter
         self.adb.keyevent("KEYCODE_ENTER")
         time.sleep(self.config.step_delay)
+        return False
+
+    def _tap_pin_continue_button(self, preferred_terms: list[str]) -> bool:
+        if self._tap_confirm(preferred_terms=preferred_terms, allow_enter_fallback=False):
+            return True
+
+        try:
+            nodes = self._capture_ui_nodes()
+            digit_nodes: list[UINode] = []
+            for node in nodes:
+                label = (node.label or "").strip()
+                if node.clickable and node.enabled and label in {"1", "2", "3"}:
+                    digit_nodes.append(node)
+            if digit_nodes:
+                first_key_top = min(parse_bounds(node.bounds)[1] for node in digit_nodes)
+                screen_right = max(parse_bounds(node.bounds)[2] for node in nodes) if nodes else 1080
+                x = screen_right // 2
+                y = max(0, first_key_top - 66)
+                self.adb.tap(x, y)
+                self.log(f"Tapped PIN continue button via keypad-layout fallback at ({x}, {y})")
+                time.sleep(self.config.step_delay)
+                return True
+        except Exception as exc:
+            self.log(f"PIN continue coordinate fallback skipped: {exc}")
+
+        return False
 
     def _tap_bounds_center(self, bounds: tuple[int, int, int, int], reason: str) -> bool:
         left, top, right, bottom = bounds
@@ -922,6 +1067,24 @@ class GoPayRegistrationFlow:
                 return True
         return False
 
+    def _input_profile_name_and_verify(self, username: str) -> bool:
+        for attempt in range(1, 3):
+            nodes = self._capture_ui_nodes()
+            self._focus_first_input(
+                nodes,
+                fallback_terms=["Masukkan namamu", "Nama", "Username", "nama pengguna"],
+                page_id=self._last_page_id,
+            )
+            self.log(f"Inputting account name/username: {username}")
+            self._input_text(username, prefer_adb_keyboard=True)
+            time.sleep(0.8)
+            nodes = self._capture_ui_nodes()
+            if self._ui_contains_text(nodes, username):
+                self.log(f"Account name visible after input attempt {attempt}.")
+                return True
+            self.log(f"Name not visible after input attempt {attempt}; retrying.")
+        return False
+
     def _focus_first_input(
         self,
         nodes: list[UINode],
@@ -997,6 +1160,7 @@ class GoPayRegistrationFlow:
         self.ctx.otp_status_baseline = ""
         self.ctx.otp_phase = "initial"
         self.ctx.phone_submitted = True
+        self.ctx.phone_submitted_at_epoch = time.time()
         self._tap_confirm()
         self._set_state(FlowState.PHONE_ENTERED)
 
@@ -1115,6 +1279,24 @@ class GoPayRegistrationFlow:
             else:
                 self.log(f"Generated username: {self.ctx.username}")
 
+        if self._last_page_id == "profile_name_input":
+            try:
+                if not self._input_profile_name_and_verify(self.ctx.username):
+                    self.ctx.error_message = "Profile name input did not accept generated account name."
+                    self._set_state(FlowState.ERROR)
+                    return
+            except Exception as exc:
+                self.ctx.error_message = f"Profile name input failed: {exc}"
+                self._set_state(FlowState.ERROR)
+                return
+
+            if not self._tap_confirm(preferred_terms=["Buat akun"]):
+                self.ctx.error_message = "Profile name confirm button not found or not clickable."
+                self._set_state(FlowState.ERROR)
+                return
+            self._set_state(FlowState.USERNAME_SET)
+            return
+
         try:
             nodes = self._capture_ui_nodes()
             self._focus_first_input(
@@ -1134,20 +1316,12 @@ class GoPayRegistrationFlow:
                     break
 
         self.log(f"Inputting account name/username: {self.ctx.username}")
-        self._input_text(self.ctx.username)
+        self._input_text(self.ctx.username, prefer_adb_keyboard=True)
 
-        if self._last_page_id == "profile_name_input":
-            time.sleep(0.5)
-            try:
-                nodes = self._capture_ui_nodes()
-                if not self._ui_contains_text(nodes, self.ctx.username):
-                    self.log("Name not visible after first input; retrying focused input.")
-                    self._focus_profile_name_input_via_layout(nodes)
-                    self._input_text(self.ctx.username)
-            except Exception as exc:
-                self.log(f"Profile-name verification fallback skipped: {exc}")
-
-        self._tap_confirm()
+        if not self._tap_confirm():
+            self.ctx.error_message = "Username confirm button not found or not clickable."
+            self._set_state(FlowState.ERROR)
+            return
         self._set_state(FlowState.USERNAME_SET)
 
     def _handle_pin_input(self) -> None:
@@ -1156,17 +1330,53 @@ class GoPayRegistrationFlow:
             self.ctx.pin = generate_pin(self.config.pin_length)
             self.log(f"Generated PIN: {self.ctx.pin}")
 
-        self._input_pin_digits(self.ctx.pin)
-        self._tap_confirm(preferred_terms=["Lanjut"])
+        if not self.ctx.pin_input_digits_entered:
+            self._input_pin_digits(self.ctx.pin)
+            self.ctx.pin_input_digits_entered = True
+            time.sleep(0.5)
+        else:
+            self.log("PIN digits already entered; retrying continue button only.")
+
+        if not self._tap_pin_continue_button(["Lanjut", "Next"]):
+            self.log("PIN continue button not found yet.")
+            return
         self._set_state(FlowState.PIN_SET)
 
     def _handle_pin_confirm(self) -> None:
         """Handle PIN confirmation state."""
-        self._input_pin_digits(self.ctx.pin)
-        self._tap_confirm(preferred_terms=["Konfirmasi PIN", "Confirm PIN", "Konfirmasi", "Confirm"])
+        if not self.ctx.pin_confirm_digits_entered:
+            self._input_pin_digits(self.ctx.pin)
+            self.ctx.pin_confirm_digits_entered = True
+            time.sleep(0.5)
+        else:
+            self.log("PIN confirmation digits already entered; retrying confirm button only.")
+
         self.ctx.otp_code = ""
         self.ctx.otp_resend_count = 0
         self.ctx.otp_phase = "post_pin"
+        if not self._tap_pin_continue_button(["Konfirmasi PIN", "Confirm PIN", "Konfirmasi", "Confirm", "Lanjut"]):
+            self.log("PIN confirmation button not found yet.")
+            return
+
+        try:
+            nodes = self._capture_ui_nodes()
+            page_match = detect_gopay_page(nodes)
+            page_id = page_match.spec.page_id if page_match else ""
+            detected = UI_PAGE_STATE_MAP.get(page_id) if page_id else None
+            if page_id == "pin_confirm":
+                self._last_page_id = page_id
+                self.ctx.current_state = FlowState.WAITING_PIN_CONFIRM
+                self.log("PIN confirmation page still visible; will retry confirm button without re-entering PIN.")
+                return
+            if detected:
+                self._last_page_id = page_id
+                if detected != self.ctx.current_state:
+                    self.log(f"Detected page via UI dump: {page_id}")
+                    self._set_state(detected)
+                return
+        except Exception as exc:
+            self.log(f"PIN confirmation post-tap detection fallback: {exc}")
+
         self._set_state(FlowState.PIN_CONFIRMED)
 
     def _handle_home(self) -> None:
@@ -1266,7 +1476,11 @@ class GoPayRegistrationFlow:
                 time.sleep(self.config.step_delay)
                 self._detect_and_update_state()
                 if self.ctx.current_state == FlowState.PHONE_ENTERED:
-                    self._set_state(FlowState.WAITING_SIGNUP_TERMS)
+                    if self._is_waiting_for_phone_submit_result():
+                        remaining = self._phone_submit_wait_remaining_seconds()
+                        self.log(f"Waiting for GoPay phone-submit result ({remaining:.1f}s left).")
+                    else:
+                        self._set_state(FlowState.WAITING_SIGNUP_TERMS)
 
             case FlowState.WAITING_SIGNUP_TERMS:
                 self._handle_signup_terms()

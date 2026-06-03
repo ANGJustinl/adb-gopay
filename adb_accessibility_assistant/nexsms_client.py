@@ -16,6 +16,7 @@ from .phone_activation_store import PhoneActivationStore
 
 PHONE_CODE_TIMEOUT_ERROR_PREFIX = "PHONE_CODE_TIMEOUT::"
 PHONE_NUMBER_REJECTED_ERROR_PREFIX = "PHONE_NUMBER_REJECTED::"
+DEVICE_COOLDOWN_ERROR_PREFIX = "DEVICE_COOLDOWN::"
 DEFAULT_ACTIVATION_VALIDITY_SECONDS = 20 * 60
 
 _NO_NUMBERS_PATTERN = re.compile(
@@ -107,6 +108,11 @@ def is_phone_code_timeout_error(message: str) -> bool:
 def is_phone_number_rejected_error(message: str) -> bool:
     """Return True when GoPay rejected the submitted phone number / login path."""
     return str(message or "").startswith(PHONE_NUMBER_REJECTED_ERROR_PREFIX)
+
+
+def is_device_cooldown_error(message: str) -> bool:
+    """Return True when GoPay rate-limited the current app/device instance."""
+    return str(message or "").startswith(DEVICE_COOLDOWN_ERROR_PREFIX)
 
 
 def _is_indonesia_alias(value: Any) -> bool:

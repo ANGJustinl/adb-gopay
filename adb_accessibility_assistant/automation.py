@@ -37,7 +37,9 @@ class AutomationEngine:
             self.log_callback(message)
 
     def start_app(self) -> None:
-        self.adb.wait_for_device()
+        if self.adb.device_serial:
+            self.log(f"Resetting ADB TCP connections and connecting device: {self.adb.device_serial}")
+        self.adb.wait_for_device(reset_tcp_connections=True)
         if self.config.reset_app_on_start and self.config.target_package:
             self.log(f"Clearing package before start: {self.config.target_package}")
             self.adb.clear_app_data(self.config.target_package)
